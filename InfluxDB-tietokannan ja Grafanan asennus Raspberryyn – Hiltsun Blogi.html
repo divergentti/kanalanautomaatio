@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="fi"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=10.0, user-scalable=yes">
+	<link rel="profile" href="http://gmpg.org/xfn/11">
+	<title>InfluxDB-tietokannan ja Grafanan asennus Raspberryyn – Hiltsun Blogi</title>
+	<script>
+	( function() {
+		var query = document.location.search;
+
+		if ( query && query.indexOf( 'preview=true' ) !== -1 ) {
+			window.name = 'wp-preview-5241';
+		}
+
+		if ( window.addEventListener ) {
+			window.addEventListener( 'unload', function() { window.name = ''; }, false );
+		}
+	}());
+	</script>
+	<link rel="dns-prefetch" href="https://cdn.jsdelivr.net/">
+<link rel="dns-prefetch" href="https://s.w.org/">
+<link rel="alternate" type="application/rss+xml" title="Hiltsun Blogi » syöte" href="https://hiltsu.dy.fi/feed/">
+<link rel="alternate" type="application/rss+xml" title="Hiltsun Blogi » kommenttien syöte" href="https://hiltsu.dy.fi/comments/feed/">
+<link rel="alternate" type="application/rss+xml" title="Hiltsun Blogi » InfluxDB-tietokannan ja Grafanan asennus Raspberryyn kommenttien syöte" href="https://hiltsu.dy.fi/2020/05/27/influxdb-tietokannan-ja-grafanan-asennus-raspberryyn/feed/">
+		<script type="text/javascript">
+			window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/12.0.0-1\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/12.0.0-1\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/hiltsu.dy.fi\/wp-includes\/js\/wp-emoji-release.min.js?ver=5.4.1"}};
+			/*! This file is auto-generated */
+			!function(e,a,t){var r,n,o,i,p=a.createElement("canvas"),s=p.getContext&&p.getContext("2d");function c(e,t){var a=String.fromCharCode;s.clearRect(0,0,p.width,p.height),s.fillText(a.apply(this,e),0,0);var r=p.toDataURL();return s.clearRect(0,0,p.width,p.height),s.fillText(a.apply(this,t),0,0),r===p.toDataURL()}function l(e){if(!s||!s.fillText)return!1;switch(s.textBaseline="top",s.font="600 32px Arial",e){case"flag":return!c([127987,65039,8205,9895,65039],[127987,65039,8203,9895,65039])&&(!c([55356,56826,55356,56819],[55356,56826,8203,55356,56819])&&!c([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]));case"emoji":return!c([55357,56424,55356,57342,8205,55358,56605,8205,55357,56424,55356,57340],[55357,56424,55356,57342,8203,55358,56605,8203,55357,56424,55356,57340])}return!1}function d(e){var t=a.createElement("script");t.src=e,t.defer=t.type="text/javascript",a.getElementsByTagName("head")[0].appendChild(t)}for(i=Array("flag","emoji"),t.supports={everything:!0,everythingExceptFlag:!0},o=0;o<i.length;o++)t.supports[i[o]]=l(i[o]),t.supports.everything=t.supports.everything&&t.supports[i[o]],"flag"!==i[o]&&(t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&t.supports[i[o]]);t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&!t.supports.flag,t.DOMReady=!1,t.readyCallback=function(){t.DOMReady=!0},t.supports.everything||(n=function(){t.readyCallback()},a.addEventListener?(a.addEventListener("DOMContentLoaded",n,!1),e.addEventListener("load",n,!1)):(e.attachEvent("onload",n),a.attachEvent("onreadystatechange",function(){"complete"===a.readyState&&t.readyCallback()})),(r=t.source||{}).concatemoji?d(r.concatemoji):r.wpemoji&&r.twemoji&&(d(r.twemoji),d(r.wpemoji)))}(window,document,window._wpemojiSettings);
+		</script><script src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/wp-emoji-release.js" type="text/javascript" defer="defer"></script>
+		<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 .07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+	<link rel="stylesheet" id="dashicons-css" href="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/dashicons.css" type="text/css" media="all">
+<link rel="stylesheet" id="admin-bar-css" href="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/admin-bar.css" type="text/css" media="all">
+<link rel="stylesheet" id="wp-block-library-css" href="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/style.css" type="text/css" media="all">
+<link rel="stylesheet" id="wordfenceAJAXcss-css" href="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/wordfenceBox.css" type="text/css" media="all">
+<link rel="stylesheet" id="font-awesome-css" href="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/font-awesome.css" type="text/css" media="all">
+<link rel="stylesheet" id="customify-style-css" href="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/style_002.css" type="text/css" media="all">
+<style id="customify-style-inline-css" type="text/css">
+#page-cover {background-image: url("https://hiltsu.dy.fi/wp-content/themes/customify/assets/images/default-cover.jpg");}.sub-menu .li-duplicator {display:none !important;}.header-search_icon-item .header-search-modal  {border-style: solid;} .header-search_icon-item .search-field  {border-style: solid;} .dark-mode .header-search_box-item .search-form-fields, .header-search_box-item .search-form-fields  {border-style: solid;} .site-content .content-area  {background-color: #FFFFFF;} /* CSS for desktop */#page-cover .page-cover-inner {min-height: 300px;}.header--row.header-top .customify-grid, .header--row.header-top .style-full-height .primary-menu-ul > li > a {min-height: 33px;}.header--row.header-main .customify-grid, .header--row.header-main .style-full-height .primary-menu-ul > li > a {min-height: 90px;}.header--row.header-bottom .customify-grid, .header--row.header-bottom .style-full-height .primary-menu-ul > li > a {min-height: 55px;}.header--row .builder-first--nav-icon {text-align: right;}.header-search_icon-item .search-submit {margin-left: -40px;}.header-search_box-item .search-submit{margin-left: -40px;} .header-search_box-item .woo_bootster_search .search-submit{margin-left: -40px;} .header-search_box-item .header-search-form button.search-submit{margin-left:-40px;}.header--row .builder-first--primary-menu {text-align: right;}/* CSS for tablet */@media screen and (max-width: 1024px) { #page-cover .page-cover-inner {min-height: 250px;}.header--row .builder-first--nav-icon {text-align: right;}.header-search_icon-item .search-submit {margin-left: -40px;}.header-search_box-item .search-submit{margin-left: -40px;} .header-search_box-item .woo_bootster_search .search-submit{margin-left: -40px;} .header-search_box-item .header-search-form button.search-submit{margin-left:-40px;} }/* CSS for mobile */@media screen and (max-width: 568px) { #page-cover .page-cover-inner {min-height: 200px;}.header--row.header-top .customify-grid, .header--row.header-top .style-full-height .primary-menu-ul > li > a {min-height: 33px;}.header--row .builder-first--nav-icon {text-align: right;}.header-search_icon-item .search-submit {margin-left: -40px;}.header-search_box-item .search-submit{margin-left: -40px;} .header-search_box-item .woo_bootster_search .search-submit{margin-left: -40px;} .header-search_box-item .header-search-form button.search-submit{margin-left:-40px;} }
+</style>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/jquery.js"></script>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/jquery-migrate.js"></script>
+<script type="text/javascript">
+/* <![CDATA[ */
+var WFAJAXWatcherVars = {"nonce":"bb7baa741b"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/admin.js"></script>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/jquery_002.js"></script>
+<script type="text/javascript">
+/* <![CDATA[ */
+var IZ = {"with_woocommerce":"0","exchange_thumbnails":"1","woo_categories":"0","enable_mobile":"1","options":{"lensShape":"round","zoomType":"lens","lensSize":"200","borderSize":"1","borderColour":"#ffffff","cursor":"pointer","lensFadeIn":"0.5","lensFadeOut":"0.5","tint":"true","tintColour":"#ffffff","tintOpacity":"0.1"},"woo_slider":"0"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/image_zoom-init.js"></script>
+<link rel="https://api.w.org/" href="https://hiltsu.dy.fi/wp-json/">
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://hiltsu.dy.fi/xmlrpc.php?rsd">
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://hiltsu.dy.fi/wp-includes/wlwmanifest.xml"> 
+<link rel="prev" title="Lämpötila- ja kosteusarvodatojen luku ja mqtt-protokollan käyttöönotto" href="https://hiltsu.dy.fi/2020/05/26/lampotila-ja-kosteusarvodatojen-luku/">
+<meta name="generator" content="WordPress 5.4.1">
+<link rel="canonical" href="https://hiltsu.dy.fi/2020/05/27/influxdb-tietokannan-ja-grafanan-asennus-raspberryyn/">
+<link rel="shortlink" href="https://hiltsu.dy.fi/?p=5241">
+<link rel="alternate" type="application/json+oembed" href="https://hiltsu.dy.fi/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fhiltsu.dy.fi%2F2020%2F05%2F27%2Finfluxdb-tietokannan-ja-grafanan-asennus-raspberryyn%2F">
+<link rel="alternate" type="text/xml+oembed" href="https://hiltsu.dy.fi/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fhiltsu.dy.fi%2F2020%2F05%2F27%2Finfluxdb-tietokannan-ja-grafanan-asennus-raspberryyn%2F&amp;format=xml">
+<link rel="pingback" href="https://hiltsu.dy.fi/xmlrpc.php"><style type="text/css" media="print">#wpadminbar { display:none; }</style>
+	<style type="text/css" media="screen">
+	html { margin-top: 32px !important; }
+	* html body { margin-top: 32px !important; }
+	@media screen and ( max-width: 782px ) {
+		html { margin-top: 46px !important; }
+		* html body { margin-top: 46px !important; }
+	}
+</style>
+	<link rel="icon" href="https://hiltsu.dy.fi/wp-content/uploads/2019/04/cropped-logoblogi6-1-1-1-32x32.jpg" sizes="32x32">
+<link rel="icon" href="https://hiltsu.dy.fi/wp-content/uploads/2019/04/cropped-logoblogi6-1-1-1-192x192.jpg" sizes="192x192">
+<link rel="apple-touch-icon" href="https://hiltsu.dy.fi/wp-content/uploads/2019/04/cropped-logoblogi6-1-1-1-180x180.jpg">
+<meta name="msapplication-TileImage" content="https://hiltsu.dy.fi/wp-content/uploads/2019/04/cropped-logoblogi6-1-1-1-270x270.jpg">
+</head>
+
+<body class="post-template-default single single-post postid-5241 single-format-standard logged-in admin-bar wp-custom-logo content-sidebar main-layout-content-sidebar sidebar_vertical_border site-full-width menu_sidebar_slide_left not-touch-screen customize-support">
+<div id="page" class="site box-shadow">
+	<a class="skip-link screen-reader-text" href="#site-content">Hyppää sisältöön</a>
+	<a class="close is-size-medium  close-panel close-sidebar-panel" href="#">
+        <span class="hamburger hamburger--squeeze is-active">
+            <span class="hamburger-box">
+              <span class="hamburger-inner"><span class="screen-reader-text">Valikko</span></span>
+            </span>
+        </span>
+        <span class="screen-reader-text">Sulje</span>
+        </a><header id="masthead" class="site-header header-v2"><div id="masthead-inner" class="site-header-inner">							<div class="header-top header--row layout-full-contained" id="cb-row--header-top" data-row-id="top" data-show-on="desktop">
+								<div class="header--row-inner header-top-inner dark-mode">
+									<div class="customify-container">
+										<div class="customify-grid  cb-row--desktop hide-on-mobile hide-on-tablet customify-grid-middle"><div class="row-v2 row-v2-top no-center no-right"><div class="col-v2 col-v2-left"><div class="item--inner builder-item--html" data-section="header_html" data-item-id="html"><div class="builder-header-html-item item--html"><p>Tiedon todellinen rakastaja tavoittelee luonnollisesti totuutta, eikä tyydy yleiseen mielipiteeseen (Platon 427-347 eKr.) </p>
+</div></div></div></div></div>									</div>
+								</div>
+							</div>
+														<div class="header-main header--row layout-full-contained" id="cb-row--header-main" data-row-id="main" data-show-on="desktop mobile">
+								<div class="header--row-inner header-main-inner light-mode">
+									<div class="customify-container">
+										<div class="customify-grid  cb-row--desktop hide-on-mobile hide-on-tablet customify-grid-middle"><div class="row-v2 row-v2-main no-center"><div class="col-v2 col-v2-left"><div class="item--inner builder-item--logo" data-section="title_tagline" data-item-id="logo">		<div class="site-branding logo-top">
+						<a href="https://hiltsu.dy.fi/" class="logo-link" rel="home" itemprop="url">
+				<img class="site-img-logo" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/cropped-logoblogi6-1-1-9.jpg" alt="Hiltsun Blogi">
+							</a>
+					</div><!-- .site-branding -->
+		</div><div class="item--inner builder-item--primary-menu has_menu" data-section="header_menu_primary" data-item-id="primary-menu"><nav id="site-navigation-main-desktop" class="site-navigation primary-menu primary-menu-main nav-menu-desktop primary-menu-desktop style-plain"><ul id="menu-paavalikko" class="primary-menu-ul menu nav-menu" aria-expanded="false"><li id="menu-item--main-desktop-1244" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-1244"><a href="https://hiltsu.dy.fi/"><span class="link-before">Alkuun<span class="nav-icon-angle">&nbsp;</span></span></a>
+<ul class="sub-menu sub-lv-0">
+	<li id="menu-item--main-desktop-1747" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-privacy-policy menu-item-1747"><a href="https://hiltsu.dy.fi/tietosuojaseloste/"><span class="link-before">Tietosuojaseloste</span></a></li>
+</ul>
+</li>
+<li id="menu-item--main-desktop-1247" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor current-menu-parent current-post-parent menu-item-1247"><a href="https://hiltsu.dy.fi/category/harrastekanala/"><span class="link-before">Harrastekanala</span></a></li>
+<li id="menu-item--main-desktop-1624" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-1624"><a href="https://hiltsu.dy.fi/category/yleinen/opiskelu/"><span class="link-before">Opiskelu</span></a></li>
+<li id="menu-item--main-desktop-1246" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-1246"><a href="https://hiltsu.dy.fi/category/remontit/"><span class="link-before">Remontit</span></a></li>
+<li id="menu-item--main-desktop-1601" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-1601"><a href="https://hiltsu.dy.fi/category/sukututkimus/"><span class="link-before">Sukututkimus</span></a></li>
+<li id="menu-item--main-desktop-1776" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor current-menu-parent current-post-parent menu-item-1776"><a href="https://hiltsu.dy.fi/category/yleinen/tee-se-itse/"><span class="link-before">Tee se itse</span></a></li>
+<li id="menu-item--main-desktop-1249" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor menu-item-1249"><a href="https://hiltsu.dy.fi/category/yleinen/"><span class="link-before">Yleinen</span></a></li>
+</ul></nav></div></div><div class="col-v2 col-v2-right"><div class="item--inner builder-item--nav-icon" data-section="header_menu_icon" data-item-id="nav-icon">		<a class="menu-mobile-toggle item-button is-size-desktop-medium is-size-tablet-medium is-size-mobile-medium">
+			<span class="hamburger hamburger--squeeze">
+				<span class="hamburger-box">
+					<span class="hamburger-inner"></span>
+				</span>
+			</span>
+			<span class="nav-icon--label hide-on-tablet hide-on-mobile">Valikko</span></a>
+		</div><div class="item--inner builder-item--search_icon" data-section="search_icon" data-item-id="search_icon"><div class="header-search_icon-item item--search_icon js-added search-left">		<a class="search-icon" href="#">
+			<span class="ic-search">
+				<svg aria-hidden="true" focusable="false" role="presentation" xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21">
+					<path fill="currentColor" fill-rule="evenodd" d="M12.514 14.906a8.264 8.264 0 0 1-4.322 1.21C3.668 16.116 0 12.513 0 8.07 0 3.626 3.668.023 8.192.023c4.525 0 8.193 3.603 8.193 8.047 0 2.033-.769 3.89-2.035 5.307l4.999 5.552-1.775 1.597-5.06-5.62zm-4.322-.843c3.37 0 6.102-2.684 6.102-5.993 0-3.31-2.732-5.994-6.102-5.994S2.09 4.76 2.09 8.07c0 3.31 2.732 5.993 6.102 5.993z"></path>
+				</svg>
+			</span>
+			<span class="ic-close">
+				<svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="612px" height="612px" viewBox="0 0 612 612" fill="currentColor" style="enable-background:new 0 0 612 612;" xml:space="preserve"><g><g id="cross"><g><polygon points="612,36.004 576.521,0.603 306,270.608 35.478,0.603 0,36.004 270.522,306.011 0,575.997 35.478,611.397 306,341.411 576.521,611.397 612,575.997 341.459,306.011 "></polygon></g></g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g></svg>
+			</span>
+			<span class="arrow-down"></span>
+		</a>
+		<div class="header-search-modal-wrapper">
+			<form role="search" class="header-search-modal header-search-form" action="https://hiltsu.dy.fi/">
+				<label>
+					<span class="screen-reader-text">Hae:</span>
+					<input type="search" class="search-field" placeholder="Hae ..." name="s" title="Hae:">
+				</label>
+				<button type="submit" class="search-submit">
+					<svg aria-hidden="true" focusable="false" role="presentation" xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21">
+						<path fill="currentColor" fill-rule="evenodd" d="M12.514 14.906a8.264 8.264 0 0 1-4.322 1.21C3.668 16.116 0 12.513 0 8.07 0 3.626 3.668.023 8.192.023c4.525 0 8.193 3.603 8.193 8.047 0 2.033-.769 3.89-2.035 5.307l4.999 5.552-1.775 1.597-5.06-5.62zm-4.322-.843c3.37 0 6.102-2.684 6.102-5.993 0-3.31-2.732-5.994-6.102-5.994S2.09 4.76 2.09 8.07c0 3.31 2.732 5.993 6.102 5.993z"></path>
+					</svg>
+				</button>
+			</form>
+		</div>
+		</div></div></div></div></div><div class="cb-row--mobile hide-on-desktop customify-grid customify-grid-middle"><div class="row-v2 row-v2-main no-center"><div class="col-v2 col-v2-left"><div class="item--inner builder-item--logo" data-section="title_tagline" data-item-id="logo">		<div class="site-branding logo-top">
+						<a href="https://hiltsu.dy.fi/" class="logo-link" rel="home" itemprop="url">
+				<img class="site-img-logo" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/cropped-logoblogi6-1-1-9.jpg" alt="Hiltsun Blogi">
+							</a>
+					</div><!-- .site-branding -->
+		</div></div><div class="col-v2 col-v2-right"><div class="item--inner builder-item--search_icon" data-section="search_icon" data-item-id="search_icon"><div class="header-search_icon-item item--search_icon js-added search-right">		<a class="search-icon" href="#">
+			<span class="ic-search">
+				<svg aria-hidden="true" focusable="false" role="presentation" xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21">
+					<path fill="currentColor" fill-rule="evenodd" d="M12.514 14.906a8.264 8.264 0 0 1-4.322 1.21C3.668 16.116 0 12.513 0 8.07 0 3.626 3.668.023 8.192.023c4.525 0 8.193 3.603 8.193 8.047 0 2.033-.769 3.89-2.035 5.307l4.999 5.552-1.775 1.597-5.06-5.62zm-4.322-.843c3.37 0 6.102-2.684 6.102-5.993 0-3.31-2.732-5.994-6.102-5.994S2.09 4.76 2.09 8.07c0 3.31 2.732 5.993 6.102 5.993z"></path>
+				</svg>
+			</span>
+			<span class="ic-close">
+				<svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="612px" height="612px" viewBox="0 0 612 612" fill="currentColor" style="enable-background:new 0 0 612 612;" xml:space="preserve"><g><g id="cross"><g><polygon points="612,36.004 576.521,0.603 306,270.608 35.478,0.603 0,36.004 270.522,306.011 0,575.997 35.478,611.397 306,341.411 576.521,611.397 612,575.997 341.459,306.011 "></polygon></g></g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g></svg>
+			</span>
+			<span class="arrow-down"></span>
+		</a>
+		<div class="header-search-modal-wrapper">
+			<form role="search" class="header-search-modal header-search-form" action="https://hiltsu.dy.fi/">
+				<label>
+					<span class="screen-reader-text">Hae:</span>
+					<input type="search" class="search-field" placeholder="Hae ..." name="s" title="Hae:">
+				</label>
+				<button type="submit" class="search-submit">
+					<svg aria-hidden="true" focusable="false" role="presentation" xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21">
+						<path fill="currentColor" fill-rule="evenodd" d="M12.514 14.906a8.264 8.264 0 0 1-4.322 1.21C3.668 16.116 0 12.513 0 8.07 0 3.626 3.668.023 8.192.023c4.525 0 8.193 3.603 8.193 8.047 0 2.033-.769 3.89-2.035 5.307l4.999 5.552-1.775 1.597-5.06-5.62zm-4.322-.843c3.37 0 6.102-2.684 6.102-5.993 0-3.31-2.732-5.994-6.102-5.994S2.09 4.76 2.09 8.07c0 3.31 2.732 5.993 6.102 5.993z"></path>
+					</svg>
+				</button>
+			</form>
+		</div>
+		</div></div><div class="item--inner builder-item--nav-icon" data-section="header_menu_icon" data-item-id="nav-icon">		<a class="menu-mobile-toggle item-button is-size-desktop-medium is-size-tablet-medium is-size-mobile-medium">
+			<span class="hamburger hamburger--squeeze">
+				<span class="hamburger-box">
+					<span class="hamburger-inner"></span>
+				</span>
+			</span>
+			<span class="nav-icon--label hide-on-tablet hide-on-mobile">Valikko</span></a>
+		</div></div></div></div>									</div>
+								</div>
+							</div>
+							</div></header>	<div id="site-content" class="site-content">
+		<div class="customify-container">
+			<div class="customify-grid">
+				<main id="main" class="content-area customify-col-9_sm-12">
+						<div class="content-inner">
+				<article id="post-5241" class="entry entry-single post-5241 post type-post status-publish format-standard hentry category-harrastekanala category-tee-se-itse tag-asennus tag-automaatio tag-grafana tag-influx tag-mqtt tag-pahomqtt tag-python tag-raspberry tag-tietokanta">
+			<h1 class="entry-title entry--item h2">InfluxDB-tietokannan ja Grafanan asennus Raspberryyn</h1>			<div class="entry-meta entry--item text-uppercase text-xsmall link-meta">
+				<span class="meta-item byline"> <span class="author vcard"><a class="url fn n" href="https://hiltsu.dy.fi/author/jarppa/"><i class="fa fa-user-circle-o"></i> Divergent</a></span></span><span class="sep"></span><span class="meta-item posted-on"><a href="https://hiltsu.dy.fi/2020/05/27/influxdb-tietokannan-ja-grafanan-asennus-raspberryyn/" rel="bookmark"><i class="fa fa-clock-o" aria-hidden="true"></i> <time class="entry-date published" datetime="2020-05-27T08:02:00+03:00">27.5.2020</time></a></span><span class="sep"></span><span class="meta-item meta-cat"><a href="https://hiltsu.dy.fi/category/harrastekanala/" rel="tag"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Harrastekanala</a></span>			</div><!-- .entry-meta -->
+					<div class="entry-content entry--item">
+			
+<p>Kanalan automaatioprojektissa (<a rel="noreferrer noopener" href="https://hiltsu.dy.fi/2020/05/15/kanalan-automaatio-raspberrylla/" target="_blank">bloggaus</a>)
+ ensimmäinen lähtökohta on saada sensoridatat toimimaan ja löytää 
+datoille sopiva tietokanta, josta tietoa voidaan hyödyntää esimerkiksi 
+web-palvelimen tai kännykkäsovelluksen kautta. Pohdin aluksi tekeväni 
+mqtt-protokollaa kuuntelevan metodin, joka tallentaisi csv-tiedostoiksi 
+tulevat datat, mutta koska saatavilla on aikaperusteinen tietokanta 
+influxdb, niin tottakai sellaista pitää hyödyntää!</p>
+
+
+
+<p>Suuremmassa ympäristössä InfluxDB ja Grafana kannattaa asentaa 
+jollekin varmistetulle palvelimelle tai pilveen. Toki raspistakin saa 
+helposti varmuuskopion kun nappaa sd-kortin irti ja tekee siitä imagen 
+varmuuskopioksi, tai sitten muuten backuppaa muuttuneita tietoja 
+jollekin toiselle laitteelle.</p>
+
+
+
+<p>Asennusdokmentaatiossa on hyödynnetty <a rel="noreferrer noopener" href="https://diyi0t.com/visualize-mqtt-data-with-influxdb-and-grafana/" target="_blank">tätä lähdettä</a> soveltuvin osin. <a rel="noreferrer noopener" href="https://www.influxdata.com/" target="_blank">InfluxDB</a> on aikatietokanta, johon eri sensoreiden datat voidaan tuoda. </p>
+
+
+
+<p>Artikkelissa esitetyllä MQTTInflluxBridge-scriptillä saadaan 
+tuotettua mqtt-kuuntelija, joka nuuskii kanala/*-alkuista sensoridataa, 
+jota tässä <a rel="noreferrer noopener" href="https://hiltsu.dy.fi/2020/05/26/lampotila-ja-kosteusarvodatojen-luku/" target="_blank">DHT22-artikkelissa</a> tuotetaan. Sama menetelmä toimii mille tahansa antureille.</p>
+
+
+
+<h2>InfluxDB asennus</h2>
+
+
+
+<p>Asennetaan apt-get install influxdb</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/influxdbinstall.jpg" alt="" class="wp-image-5242" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbinstall.jpg?v=1590509800 795w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbinstall-300x162.jpg?v=1590509800 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbinstall-768x413.jpg?v=1590509800 768w" sizes="(max-width: 795px) 100vw, 795px"></figure>
+
+
+
+<p>sudo systemctl enable influxdb</p>
+
+
+
+<p>sudo systemctl start influxdb</p>
+
+
+
+<p>sudo apt install influxdb-client</p>
+
+
+
+<p>influx</p>
+
+
+
+<p>CREATE DATABASE kanaladata (kuvassa aiheet)</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/influxdbaiheet.jpg" alt="" class="wp-image-5244" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbaiheet.jpg?v=1590510126 801w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbaiheet-300x163.jpg?v=1590510126 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbaiheet-768x417.jpg?v=1590510126 768w" sizes="(max-width: 801px) 100vw, 801px"></figure>
+
+
+
+<p>Nyt tietokanta aiheet on perustettu, joskin mitään tietoturvaa 
+tietokannalle ei ole asetettu.  Tehdään MQTTInfluxBridge.py ajatellen 
+oletuskäyttäjä ja salasana:</p>
+
+
+
+<p>USE kanaladata<br>CREATE USER mqtt WITH PASSWORD ‘mqtt’<br>GRANT ALL ON kanaladata TO mqtt<br>exit</p>
+
+
+
+<p>Tietokantamoottorin statuksen näet komennolla sudo service influxdb status</p>
+
+
+
+<p>Seuraavaksi pitää muokata influxin asetuksia ja etsiä kohta [http] 
+(nanossa ctrl+w) ja muuttaa Determines whether HTTP endpoint is enabled 
+arvoksi true.</p>
+
+
+
+<p>sudo nano /etc/influxdb/influxdb.conf</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/infoluxdbconf.jpg" alt="" class="wp-image-5254" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/infoluxdbconf.jpg?v=1590512847 793w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/infoluxdbconf-300x162.jpg?v=1590512847 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/infoluxdbconf-768x414.jpg?v=1590512847 768w" sizes="(max-width: 793px) 100vw, 793px"></figure>
+
+
+
+<p>Tämän jälkeen käynnistetään palvelu uudelleen:</p>
+
+
+
+<p>sudo service influxdb restart</p>
+
+
+
+<p>Seuraavaksi asennetaan Pythonille influx-tuki:</p>
+
+
+
+<p>sudo pip3 install influxdb</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/infoluxpython.jpg" alt="" class="wp-image-5255" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/infoluxpython.jpg?v=1590513128 794w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/infoluxpython-300x161.jpg?v=1590513128 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/infoluxpython-768x413.jpg?v=1590513128 768w" sizes="(max-width: 794px) 100vw, 794px"></figure>
+
+
+
+<p>Seuraavaksi lataa <a rel="noreferrer noopener" href="https://diyi0t.com/visualize-mqtt-data-with-influxdb-and-grafana/" target="_blank">artikkelista</a>
+ MQTTInfluxBridge.py-tiedosto ja muokkaa sitä alusta osoitteiden osalta 
+(localhost on siis sama laite) ja tietokannan nimen osalta (kanaladata, 
+joka luotiin edellä influxdb:een) ja MQTT_TOPIC osalta, eli mitä 
+mqtt-aiheita kuunnellaan. Influxdb_client jälkeen ei ole mitään 
+editoitavaa:</p>
+
+
+
+<pre class="wp-block-code"><code>import re
+from typing import NamedTuple
+
+import paho.mqtt.client as mqtt
+from influxdb import InfluxDBClient
+
+INFLUXDB_ADDRESS = 'localhost'
+INFLUXDB_USER = 'mqtt'
+INFLUXDB_PASSWORD = 'mqtt'
+INFLUXDB_DATABASE = 'kanaladata'
+
+MQTT_ADDRESS = 'localhost'
+MQTT_USER = ''
+MQTT_PASSWORD = ''
+MQTT_TOPIC = 'kanala/+/+'
+MQTT_REGEX = 'kanala/([^/]+)/([^/]+)'
+MQTT_CLIENT_ID = 'MQTTInfluxDBBridge'
+
+influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
+
+
+class SensorData(NamedTuple):
+    location: str
+    measurement: str
+    value: float
+
+
+def on_connect(client, userdata, flags, rc):
+    """ The callback for when the client receives a CONNACK response from the server."""
+    print('Connected with result code ' + str(rc))
+    client.subscribe(MQTT_TOPIC)
+
+
+def on_message(client, userdata, msg):
+    """The callback for when a PUBLISH message is received from the server."""
+    print(msg.topic + ' ' + str(msg.payload))
+    sensor_data = _parse_mqtt_message(msg.topic, msg.payload.decode('utf-8'))
+    if sensor_data is not None:
+        _send_sensor_data_to_influxdb(sensor_data)
+
+
+def _parse_mqtt_message(topic, payload):
+    match = re.match(MQTT_REGEX, topic)
+    if match:
+        location = match.group(1)
+        measurement = match.group(2)
+        if measurement == 'status':
+            return None
+        return SensorData(location, measurement, float(payload))
+    else:
+        return None
+
+
+def _send_sensor_data_to_influxdb(sensor_data):
+    json_body = [
+        {
+            'measurement': sensor_data.measurement,
+            'tags': {
+                'location': sensor_data.location
+            },
+            'fields': {
+                'value': sensor_data.value
+            }
+        }
+    ]
+    influxdb_client.write_points(json_body)
+
+
+def _init_influxdb_database():
+    databases = influxdb_client.get_list_database()
+    if len(list(filter(lambda x: x['name'] == INFLUXDB_DATABASE, databases))) == 0:
+        influxdb_client.create_database(INFLUXDB_DATABASE)
+    influxdb_client.switch_database(INFLUXDB_DATABASE)
+
+
+def main():
+    _init_influxdb_database()
+
+    mqtt_client = mqtt.Client(MQTT_CLIENT_ID)
+    mqtt_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
+    mqtt_client.on_connect = on_connect
+    mqtt_client.on_message = on_message
+
+    mqtt_client.connect(MQTT_ADDRESS, 1883)
+    mqtt_client.loop_forever()
+
+
+if __name__ == '__main__':
+    print('MQTT to InfluxDB bridge')
+    main()
+</code></pre>
+
+
+
+<p>Tämän jälkeen scriptin pitäisi toimia, mutta huomaa, että käytä 
+python3:a, jos olet asentanut pip3-komennolla lisäosat. Alla olevassa 
+kuvassa näet vasemmalla käynnistetyn skriptin. </p>
+
+
+
+<p>Muokataan vielä aiemmin dht22-anturille tehtyä scriptiä siten, että 
+mqtt-viestin aiheena on kanala/sisa/lampo tai kosteus (siis se mitä 
+MQTTInfluxBridge kuuntelee):</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/influxkanaladata-1024x385.jpg" alt="" class="wp-image-5259" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxkanaladata-1024x385.jpg?v=1590521977 1024w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxkanaladata-300x113.jpg?v=1590521977 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxkanaladata-768x289.jpg?v=1590521977 768w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxkanaladata.jpg?v=1590521977 1128w" sizes="(max-width: 1024px) 100vw, 1024px"></figure>
+
+
+
+<p>Käynnistetään DHT22-anturia lukeva scripti ja koska MQTTInfluxBridge 
+kuuntelee kanala/-alkuisia mqtt-viestejä, alkaa silta välittämään niitä 
+aikaleimattuna influx-tietokantaan nimeltään kanaladata. Raspi toimii 
+nyt siis sekä mqtt brokerina että mqtt-viestien siltana 
+influx-tietokantaan.</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/influxdbread-1024x378.jpg" alt="" class="wp-image-5260" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbread-1024x378.jpg?v=1590522101 1024w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbread-300x111.jpg?v=1590522101 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbread-768x283.jpg?v=1590522101 768w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxdbread.jpg?v=1590522101 1131w" sizes="(max-width: 1024px) 100vw, 1024px"></figure>
+
+
+
+<h2>Grafanan asennus</h2>
+
+
+
+<p><a rel="noreferrer noopener" href="https://grafana.com/" target="_blank">Grafana</a>
+ on datan visualisointiin tehty ilmainen sovellus. Se pitää asentaa 
+muusta kuin oletusrepositorystä, sillä jos asennat Grafanan apt-get 
+install grafana, login ruutu on tuolloin tyhjä, koska paketoitu verio on
+ niin vanha.</p>
+
+
+
+<p>Uusin on tällä hetkellä versio 7.0.1 ja latauslinkin näet <a rel="noreferrer noopener" href="https://grafana.com/grafana/download?platform=arm" target="_blank">tästä</a>. Raspihan on oletuksena armv7, eli seuraa siihen liittyvää ohjeistusta.</p>
+
+
+
+<p>sudo apt-get install -y adduser libfontconfig1</p>
+
+
+
+<p>wget <a href="https://dl.grafana.com/oss/release/grafana_7.0.1_armhf.deb">https://dl.grafana.com/oss/release/grafana_7.0.1_armhf.deb</a></p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanarepoinstall.jpg" alt="" class="wp-image-5246" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanarepoinstall.jpg?v=1590511157 800w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanarepoinstall-300x162.jpg?v=1590511157 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanarepoinstall-768x416.jpg?v=1590511157 768w" sizes="(max-width: 800px) 100vw, 800px"></figure>
+
+
+
+<p>Mikäli olit asentanut vanhan Grafanan ja poistanut sen sudo apt-get 
+remove, niin sinun pitää muistaa ajaa myös sudo apt-get autoremove, 
+sillä muutoin osa tiedostoista on käytössä ja installeri kaatuu. Senkin 
+jälkeen näet logitiedostoihin liittyvää valitusta, mutta asennus menee 
+läpi.</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanainst2.jpg" alt="" class="wp-image-5247" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanainst2.jpg?v=1590511391 799w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanainst2-300x87.jpg?v=1590511391 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanainst2-768x224.jpg?v=1590511391 768w" sizes="(max-width: 799px) 100vw, 799px"></figure>
+
+
+
+<p>sudo systemctl enable grafana-server</p>
+
+
+
+<p>sudo systemctl start grafana-server</p>
+
+
+
+<p>Tämän jälkeen Grafana on käytettävissä portissa 3000, eli raspin 
+ip-osoite:3000 (localhost:3000 jos samalla koneella käytät 
+webbiselainta) ja oletuskäyttäjä ja salasana ovat admin. Ensimmäisellä 
+kirjautumiskerralla voit vaihtaa salasanan.</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanalogini.jpg" alt="" class="wp-image-5248" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanalogini.jpg?v=1590511639 972w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanalogini-300x175.jpg?v=1590511639 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanalogini-768x448.jpg?v=1590511639 768w" sizes="(max-width: 972px) 100vw, 972px"></figure>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanamainscfeen.jpg" alt="" class="wp-image-5250" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanamainscfeen.jpg?v=1590511749 965w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanamainscfeen-300x178.jpg?v=1590511749 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanamainscfeen-768x456.jpg?v=1590511749 768w" sizes="(max-width: 965px) 100vw, 965px"></figure>
+
+
+
+<p>Tämän jälkeen lisätään Data Sources edellä luotu Influx-tietokanta kanaladata:</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanaadddbjpg-1024x559.jpg" alt="" class="wp-image-5251" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanaadddbjpg-1024x559.jpg?v=1590511887 1024w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanaadddbjpg-300x164.jpg?v=1590511887 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanaadddbjpg-768x419.jpg?v=1590511887 768w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanaadddbjpg.jpg?v=1590511887 1097w" sizes="(max-width: 1024px) 100vw, 1024px"></figure>
+
+
+
+<p>Lisätään localhost:8086 ja kohtaan Database: kanaladata (kuvassa aiheet)</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanainfoluxtest-1024x594.jpg" alt="" class="wp-image-5252" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanainfoluxtest-1024x594.jpg?v=1590512164 1024w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanainfoluxtest-300x174.jpg?v=1590512164 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanainfoluxtest-768x446.jpg?v=1590512164 768w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanainfoluxtest.jpg?v=1590512164 1036w" sizes="(max-width: 1024px) 100vw, 1024px"></figure>
+
+
+
+<p>Valitse http metodiksi get ja paina test and save. Mikäli yhteys 
+Influx-tietokantaan on kunnossa, saat vihreällä kuittausviestin. Tämän 
+jälkeen voit mennä tarkastelemaan mitä tietoja tietokantaan tulee 
+dht22-anturilta explore-valinnalla, eli vahvistat näin systeemin 
+toimivan. Voit tehdä myöhemmin haluamasi dashboardit datan 
+analysoimiseksi.</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/GrafanaData-1024x573.jpg" alt="" class="wp-image-5263" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/GrafanaData-1024x573.jpg?v=1590522733 1024w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/GrafanaData-300x168.jpg?v=1590522733 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/GrafanaData-768x430.jpg?v=1590522733 768w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/GrafanaData.jpg?v=1590522733 1100w" sizes="(max-width: 1024px) 100vw, 1024px"></figure>
+
+
+
+<p>Prosessorin käyttöaste on edelleen noin 1 % eli ei juuri mitään.</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/influxgrafprosessori-1024x559.jpg" alt="" class="wp-image-5264" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxgrafprosessori-1024x559.jpg?v=1590522993 1024w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxgrafprosessori-300x164.jpg?v=1590522993 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxgrafprosessori-768x419.jpg?v=1590522993 768w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/influxgrafprosessori.jpg?v=1590522993 1150w" sizes="(max-width: 1024px) 100vw, 1024px"></figure>
+
+
+
+<p>Muutin dht22 scriptiä siten, että tiedot luetaan kerran minuutissa ja
+ lähetetään influxdb-tietokantaan. Tänä aamuna sain tehtyä Grafanalla 
+hyvin helposti kahden muuttujan graafit:</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanadash1-1024x479.jpg" alt="" class="wp-image-5272" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanadash1-1024x479.jpg?v=1590558823 1024w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanadash1-300x140.jpg?v=1590558823 300w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanadash1-768x359.jpg?v=1590558823 768w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanadash1.jpg?v=1590558823 1350w" sizes="(max-width: 1024px) 100vw, 1024px"></figure>
+
+
+
+<p>Muuttujille voi asettaa monia eri ehtoja ja esitystapojakin löytyy.</p>
+
+
+
+<figure class="wp-block-image size-large"><img src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/grafanadashboard2.jpg" alt="" class="wp-image-5273" srcset="https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanadashboard2.jpg?v=1590558850 715w, https://hiltsu.dy.fi/wp-content/uploads/2020/05/grafanadashboard2-300x172.jpg?v=1590558850 300w" sizes="(max-width: 715px) 100vw, 715px"></figure>
+
+
+
+<p>Sensori ei ollut aidosti kanalassa, vaan käytännössä huoneessa jossa 
+koodaan. Grafanaan pääsee raspin ip-osoitteella miltä tahansa samassa 
+verkossa olevalta tietokoneelta (tai jos avaa palomuurista portin 3000, 
+niin mistä tahansa maailmalta).</p>
+
+
+
+<p>Kunhan komponentteja saapuu maailmalta, lisään 
+ESP32-mikrokontrollerin avulla etälämpötila- ja kosteusmittauksen, 
+RFID-tunnusten luvun (kanojen koivista), kaasuanturin datoja jne. Ehkä 
+myös ohjaustieto, kuten 433MHz tapahtuva valot tai kanavapuhallin päälle
+ sekä ehkä haastavin, eli kanalan luukun avaaminen, olisi syytä laittaa 
+tietokantaan. Tällöin voisi saada todella hyvää dataa esimerkiksi 
+kaasujen tuotosta suhteessa puhaltimen tehoon tai kanojen läsnäoloon 
+jne.</p>
+		</div><!-- .entry-content -->
+		<div class="entry--item entry-tags tags-links">Tagged <a href="https://hiltsu.dy.fi/tag/asennus/" rel="tag">asennus</a>, <a href="https://hiltsu.dy.fi/tag/automaatio/" rel="tag">automaatio</a>, <a href="https://hiltsu.dy.fi/tag/grafana/" rel="tag">grafana</a>, <a href="https://hiltsu.dy.fi/tag/influx/" rel="tag">influx</a>, <a href="https://hiltsu.dy.fi/tag/mqtt/" rel="tag">mqtt</a>, <a href="https://hiltsu.dy.fi/tag/pahomqtt/" rel="tag">pahomqtt</a>, <a href="https://hiltsu.dy.fi/tag/python/" rel="tag">python</a>, <a href="https://hiltsu.dy.fi/tag/raspberry/" rel="tag">raspberry</a>, <a href="https://hiltsu.dy.fi/tag/tietokanta/" rel="tag">tietokanta</a></div><div class="entry-post-navigation entry--item">
+	<nav class="navigation post-navigation" role="navigation" aria-label="Artikkelit">
+		<h2 class="screen-reader-text">Artikkelien selaus</h2>
+		<div class="nav-links"><div class="nav-previous"><a href="https://hiltsu.dy.fi/2020/05/26/lampotila-ja-kosteusarvodatojen-luku/" rel="prev"><span class="meta-nav text-uppercase text-xsmall color-meta" aria-hidden="true">Previous</span> <span class="screen-reader-text">Previous post:</span> <span class="post-title text-large">Lämpötila- ja kosteusarvodatojen luku ja mqtt-protokollan käyttöönotto</span></a></div></div>
+	</nav></div>		</article>
+			</div><!-- #.content-inner -->
+              			</main><!-- #main -->
+			<aside id="sidebar-primary" class="sidebar-primary customify-col-3_sm-12">
+	<div class="sidebar-primary-inner sidebar-inner widget-area">
+				<section id="recent-posts-2" class="widget widget_recent_entries">		<h4 class="widget-title">Viimeisimmät artikkelit</h4>		<ul>
+											<li>
+					<a href="https://hiltsu.dy.fi/2020/05/27/influxdb-tietokannan-ja-grafanan-asennus-raspberryyn/" aria-current="page">InfluxDB-tietokannan ja Grafanan asennus Raspberryyn</a>
+											<span class="post-date">27.5.2020</span>
+									</li>
+											<li>
+					<a href="https://hiltsu.dy.fi/2020/05/26/lampotila-ja-kosteusarvodatojen-luku/">Lämpötila- ja kosteusarvodatojen luku ja mqtt-protokollan käyttöönotto</a>
+											<span class="post-date">26.5.2020</span>
+									</li>
+											<li>
+					<a href="https://hiltsu.dy.fi/2020/05/19/ryobi-ry18pcb-140-puhdistusharja/">Ryobi RY18PCB-140 puhdistusharja</a>
+											<span class="post-date">19.5.2020</span>
+									</li>
+											<li>
+					<a href="https://hiltsu.dy.fi/2020/05/17/v380-pro-valvontakameran-rajaytys/">V380 Pro valvontakameran räjäytys</a>
+											<span class="post-date">17.5.2020</span>
+									</li>
+											<li>
+					<a href="https://hiltsu.dy.fi/2020/05/15/tee-se-itse-lapinakyva-covid-19-rakasuoja-tai-visiiri/">Tee se itse läpinäkyvä covid-19 räkäsuoja tai visiiri</a>
+											<span class="post-date">15.5.2020</span>
+									</li>
+					</ul>
+		</section><section id="archives-2" class="widget widget_archive"><h4 class="widget-title">Arkistot</h4>		<label class="screen-reader-text" for="archives-dropdown-2">Arkistot</label>
+		<select id="archives-dropdown-2" name="archive-dropdown">
+			
+			<option value="" selected="selected">Valitse kuukausi</option>
+				<option value="https://hiltsu.dy.fi/2020/05/"> toukokuu 2020 &nbsp;(12)</option>
+	<option value="https://hiltsu.dy.fi/2020/04/"> huhtikuu 2020 &nbsp;(11)</option>
+	<option value="https://hiltsu.dy.fi/2020/03/"> maaliskuu 2020 &nbsp;(8)</option>
+	<option value="https://hiltsu.dy.fi/2020/02/"> helmikuu 2020 &nbsp;(7)</option>
+	<option value="https://hiltsu.dy.fi/2020/01/"> tammikuu 2020 &nbsp;(10)</option>
+	<option value="https://hiltsu.dy.fi/2019/12/"> joulukuu 2019 &nbsp;(4)</option>
+	<option value="https://hiltsu.dy.fi/2019/11/"> marraskuu 2019 &nbsp;(5)</option>
+	<option value="https://hiltsu.dy.fi/2019/10/"> lokakuu 2019 &nbsp;(3)</option>
+	<option value="https://hiltsu.dy.fi/2019/09/"> syyskuu 2019 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2019/08/"> elokuu 2019 &nbsp;(6)</option>
+	<option value="https://hiltsu.dy.fi/2019/07/"> heinäkuu 2019 &nbsp;(6)</option>
+	<option value="https://hiltsu.dy.fi/2019/06/"> kesäkuu 2019 &nbsp;(9)</option>
+	<option value="https://hiltsu.dy.fi/2019/05/"> toukokuu 2019 &nbsp;(10)</option>
+	<option value="https://hiltsu.dy.fi/2019/04/"> huhtikuu 2019 &nbsp;(7)</option>
+	<option value="https://hiltsu.dy.fi/2019/03/"> maaliskuu 2019 &nbsp;(4)</option>
+	<option value="https://hiltsu.dy.fi/2019/02/"> helmikuu 2019 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2019/01/"> tammikuu 2019 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2018/11/"> marraskuu 2018 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2018/10/"> lokakuu 2018 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2018/09/"> syyskuu 2018 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2018/08/"> elokuu 2018 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2018/07/"> heinäkuu 2018 &nbsp;(4)</option>
+	<option value="https://hiltsu.dy.fi/2018/06/"> kesäkuu 2018 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2018/05/"> toukokuu 2018 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2018/04/"> huhtikuu 2018 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2018/03/"> maaliskuu 2018 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2017/12/"> joulukuu 2017 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2017/11/"> marraskuu 2017 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2017/08/"> elokuu 2017 &nbsp;(4)</option>
+	<option value="https://hiltsu.dy.fi/2017/05/"> toukokuu 2017 &nbsp;(4)</option>
+	<option value="https://hiltsu.dy.fi/2017/04/"> huhtikuu 2017 &nbsp;(4)</option>
+	<option value="https://hiltsu.dy.fi/2017/03/"> maaliskuu 2017 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2017/02/"> helmikuu 2017 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2016/11/"> marraskuu 2016 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2016/09/"> syyskuu 2016 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2016/07/"> heinäkuu 2016 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2016/06/"> kesäkuu 2016 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2016/04/"> huhtikuu 2016 &nbsp;(3)</option>
+	<option value="https://hiltsu.dy.fi/2016/03/"> maaliskuu 2016 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2016/02/"> helmikuu 2016 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2016/01/"> tammikuu 2016 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2015/02/"> helmikuu 2015 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2014/01/"> tammikuu 2014 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2013/10/"> lokakuu 2013 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2013/04/"> huhtikuu 2013 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2012/10/"> lokakuu 2012 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2012/05/"> toukokuu 2012 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2010/07/"> heinäkuu 2010 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2009/10/"> lokakuu 2009 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2009/07/"> heinäkuu 2009 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2009/06/"> kesäkuu 2009 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2009/04/"> huhtikuu 2009 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2009/03/"> maaliskuu 2009 &nbsp;(1)</option>
+	<option value="https://hiltsu.dy.fi/2009/01/"> tammikuu 2009 &nbsp;(2)</option>
+	<option value="https://hiltsu.dy.fi/2008/09/"> syyskuu 2008 &nbsp;(1)</option>
+
+		</select>
+
+<script type="text/javascript">
+/* <![CDATA[ */
+(function() {
+	var dropdown = document.getElementById( "archives-dropdown-2" );
+	function onSelectChange() {
+		if ( dropdown.options[ dropdown.selectedIndex ].value !== '' ) {
+			document.location.href = this.options[ this.selectedIndex ].value;
+		}
+	}
+	dropdown.onchange = onSelectChange;
+})();
+/* ]]> */
+</script>
+
+		</section><section id="tag_cloud-2" class="widget widget_tag_cloud"><h4 class="widget-title">Avainsanat</h4><div class="tagcloud"><a href="https://hiltsu.dy.fi/tag/3d/" class="tag-cloud-link tag-link-6 tag-link-position-1" style="font-size: 13.854545454545pt;" aria-label="3d (11 kohdetta)">3d<span class="tag-link-count"> (11)</span></a>
+<a href="https://hiltsu.dy.fi/tag/aikuiskasvatus/" class="tag-cloud-link tag-link-17 tag-link-position-2" style="font-size: 10.545454545455pt;" aria-label="aikuiskasvatus (8 kohdetta)">aikuiskasvatus<span class="tag-link-count"> (8)</span></a>
+<a href="https://hiltsu.dy.fi/tag/covid19/" class="tag-cloud-link tag-link-1203 tag-link-position-3" style="font-size: 8pt;" aria-label="covid19 (6 kohdetta)">covid19<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/diy/" class="tag-cloud-link tag-link-72 tag-link-position-4" style="font-size: 22pt;" aria-label="DIY (24 kohdetta)">DIY<span class="tag-link-count"> (24)</span></a>
+<a href="https://hiltsu.dy.fi/tag/etaohjaus/" class="tag-cloud-link tag-link-94 tag-link-position-5" style="font-size: 8pt;" aria-label="Etäohjaus (6 kohdetta)">Etäohjaus<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/genetiikka/" class="tag-cloud-link tag-link-109 tag-link-position-6" style="font-size: 10.545454545455pt;" aria-label="genetiikka (8 kohdetta)">genetiikka<span class="tag-link-count"> (8)</span></a>
+<a href="https://hiltsu.dy.fi/tag/hanko/" class="tag-cloud-link tag-link-118 tag-link-position-7" style="font-size: 17.672727272727pt;" aria-label="hanko (16 kohdetta)">hanko<span class="tag-link-count"> (16)</span></a>
+<a href="https://hiltsu.dy.fi/tag/harrastekanat/" class="tag-cloud-link tag-link-120 tag-link-position-8" style="font-size: 16.909090909091pt;" aria-label="harrastekanat (15 kohdetta)">harrastekanat<span class="tag-link-count"> (15)</span></a>
+<a href="https://hiltsu.dy.fi/tag/huolto/" class="tag-cloud-link tag-link-141 tag-link-position-9" style="font-size: 8pt;" aria-label="huolto (6 kohdetta)">huolto<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/idea/" class="tag-cloud-link tag-link-583 tag-link-position-10" style="font-size: 9.2727272727273pt;" aria-label="idea (7 kohdetta)">idea<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/kanala/" class="tag-cloud-link tag-link-171 tag-link-position-11" style="font-size: 21.490909090909pt;" aria-label="kanala (23 kohdetta)">kanala<span class="tag-link-count"> (23)</span></a>
+<a href="https://hiltsu.dy.fi/tag/kanat/" class="tag-cloud-link tag-link-174 tag-link-position-12" style="font-size: 21.490909090909pt;" aria-label="kanat (23 kohdetta)">kanat<span class="tag-link-count"> (23)</span></a>
+<a href="https://hiltsu.dy.fi/tag/kehityspsykologia/" class="tag-cloud-link tag-link-186 tag-link-position-13" style="font-size: 8pt;" aria-label="kehityspsykologia (6 kohdetta)">kehityspsykologia<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/keinoaly/" class="tag-cloud-link tag-link-187 tag-link-position-14" style="font-size: 9.2727272727273pt;" aria-label="keinoäly (7 kohdetta)">keinoäly<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/kesakanat/" class="tag-cloud-link tag-link-190 tag-link-position-15" style="font-size: 15.636363636364pt;" aria-label="kesäkanat (13 kohdetta)">kesäkanat<span class="tag-link-count"> (13)</span></a>
+<a href="https://hiltsu.dy.fi/tag/kiinalainen/" class="tag-cloud-link tag-link-194 tag-link-position-16" style="font-size: 8pt;" aria-label="kiinalainen (6 kohdetta)">kiinalainen<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/korjaus/" class="tag-cloud-link tag-link-207 tag-link-position-17" style="font-size: 12.836363636364pt;" aria-label="korjaus (10 kohdetta)">korjaus<span class="tag-link-count"> (10)</span></a>
+<a href="https://hiltsu.dy.fi/tag/koulutus/" class="tag-cloud-link tag-link-212 tag-link-position-18" style="font-size: 8pt;" aria-label="koulutus (6 kohdetta)">koulutus<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/kaytos/" class="tag-cloud-link tag-link-183 tag-link-position-19" style="font-size: 8pt;" aria-label="käytös (6 kohdetta)">käytös<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/laki/" class="tag-cloud-link tag-link-915 tag-link-position-20" style="font-size: 9.2727272727273pt;" aria-label="laki (7 kohdetta)">laki<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/laaketiede/" class="tag-cloud-link tag-link-233 tag-link-position-21" style="font-size: 8pt;" aria-label="lääketiede (6 kohdetta)">lääketiede<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/laakitys/" class="tag-cloud-link tag-link-780 tag-link-position-22" style="font-size: 9.2727272727273pt;" aria-label="lääkitys (7 kohdetta)">lääkitys<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/maatiaiskana/" class="tag-cloud-link tag-link-266 tag-link-position-23" style="font-size: 19.963636363636pt;" aria-label="maatiaiskana (20 kohdetta)">maatiaiskana<span class="tag-link-count"> (20)</span></a>
+<a href="https://hiltsu.dy.fi/tag/masennus/" class="tag-cloud-link tag-link-273 tag-link-position-24" style="font-size: 8pt;" aria-label="masennus (6 kohdetta)">masennus<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/neurologia/" class="tag-cloud-link tag-link-307 tag-link-position-25" style="font-size: 10.545454545455pt;" aria-label="neurologia (8 kohdetta)">neurologia<span class="tag-link-count"> (8)</span></a>
+<a href="https://hiltsu.dy.fi/tag/opiskelu/" class="tag-cloud-link tag-link-325 tag-link-position-26" style="font-size: 20.981818181818pt;" aria-label="opiskelu (22 kohdetta)">opiskelu<span class="tag-link-count"> (22)</span></a>
+<a href="https://hiltsu.dy.fi/tag/oppiminen/" class="tag-cloud-link tag-link-326 tag-link-position-27" style="font-size: 11.818181818182pt;" aria-label="oppiminen (9 kohdetta)">oppiminen<span class="tag-link-count"> (9)</span></a>
+<a href="https://hiltsu.dy.fi/tag/otex/" class="tag-cloud-link tag-link-331 tag-link-position-28" style="font-size: 8pt;" aria-label="otex (6 kohdetta)">otex<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/paneelikattomaali/" class="tag-cloud-link tag-link-335 tag-link-position-29" style="font-size: 9.2727272727273pt;" aria-label="paneelikattomaali (7 kohdetta)">paneelikattomaali<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/pedagogia/" class="tag-cloud-link tag-link-344 tag-link-position-30" style="font-size: 8pt;" aria-label="pedagogia (6 kohdetta)">pedagogia<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/pelko/" class="tag-cloud-link tag-link-345 tag-link-position-31" style="font-size: 8pt;" aria-label="pelko (6 kohdetta)">pelko<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/pintaremontti/" class="tag-cloud-link tag-link-365 tag-link-position-32" style="font-size: 11.818181818182pt;" aria-label="pintaremontti (9 kohdetta)">pintaremontti<span class="tag-link-count"> (9)</span></a>
+<a href="https://hiltsu.dy.fi/tag/ponttimaali/" class="tag-cloud-link tag-link-370 tag-link-position-33" style="font-size: 9.2727272727273pt;" aria-label="ponttimaali (7 kohdetta)">ponttimaali<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/psykologia/" class="tag-cloud-link tag-link-378 tag-link-position-34" style="font-size: 18.945454545455pt;" aria-label="psykologia (18 kohdetta)">psykologia<span class="tag-link-count"> (18)</span></a>
+<a href="https://hiltsu.dy.fi/tag/paasiaisparvi/" class="tag-cloud-link tag-link-342 tag-link-position-35" style="font-size: 19.454545454545pt;" aria-label="pääsiäisparvi (19 kohdetta)">pääsiäisparvi<span class="tag-link-count"> (19)</span></a>
+<a href="https://hiltsu.dy.fi/tag/raspberry/" class="tag-cloud-link tag-link-1325 tag-link-position-36" style="font-size: 8pt;" aria-label="raspberry (6 kohdetta)">raspberry<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/remontti/" class="tag-cloud-link tag-link-392 tag-link-position-37" style="font-size: 10.545454545455pt;" aria-label="remontti (8 kohdetta)">remontti<span class="tag-link-count"> (8)</span></a>
+<a href="https://hiltsu.dy.fi/tag/stressi/" class="tag-cloud-link tag-link-431 tag-link-position-38" style="font-size: 9.2727272727273pt;" aria-label="stressi (7 kohdetta)">stressi<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/suunnittelu/" class="tag-cloud-link tag-link-439 tag-link-position-39" style="font-size: 8pt;" aria-label="Suunnittelu (6 kohdetta)">Suunnittelu<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/teeseitse/" class="tag-cloud-link tag-link-454 tag-link-position-40" style="font-size: 10.545454545455pt;" aria-label="teeseitse (8 kohdetta)">teeseitse<span class="tag-link-count"> (8)</span></a>
+<a href="https://hiltsu.dy.fi/tag/tikkurila/" class="tag-cloud-link tag-link-466 tag-link-position-41" style="font-size: 8pt;" aria-label="tikkurila (6 kohdetta)">tikkurila<span class="tag-link-count"> (6)</span></a>
+<a href="https://hiltsu.dy.fi/tag/tutkimus/" class="tag-cloud-link tag-link-484 tag-link-position-42" style="font-size: 11.818181818182pt;" aria-label="tutkimus (9 kohdetta)">tutkimus<span class="tag-link-count"> (9)</span></a>
+<a href="https://hiltsu.dy.fi/tag/valvontakamera/" class="tag-cloud-link tag-link-511 tag-link-position-43" style="font-size: 9.2727272727273pt;" aria-label="valvontakamera (7 kohdetta)">valvontakamera<span class="tag-link-count"> (7)</span></a>
+<a href="https://hiltsu.dy.fi/tag/video/" class="tag-cloud-link tag-link-563 tag-link-position-44" style="font-size: 18.945454545455pt;" aria-label="video (18 kohdetta)">video<span class="tag-link-count"> (18)</span></a>
+<a href="https://hiltsu.dy.fi/tag/videovalvonta/" class="tag-cloud-link tag-link-866 tag-link-position-45" style="font-size: 9.2727272727273pt;" aria-label="videovalvonta (7 kohdetta)">videovalvonta<span class="tag-link-count"> (7)</span></a></div>
+</section>	</div>
+</aside><!-- #sidebar-primary -->
+		</div><!-- #.customify-grid -->
+	</div><!-- #.customify-container -->
+</div><!-- #content -->
+<footer class="site-footer" id="site-footer">							<div class="footer-bottom footer--row layout-full-contained" id="cb-row--footer-bottom" data-row-id="bottom" data-show-on="desktop">
+								<div class="footer--row-inner footer-bottom-inner dark-mode">
+									<div class="customify-container">
+										<div class="customify-grid  customify-grid-top"><div class="customify-col-12_md-12_sm-12_xs-12 builder-item builder-first--footer_copyright" data-push-left="_sm-0"><div class="item--inner builder-item--footer_copyright" data-section="footer_copyright" data-item-id="footer_copyright"><div class="builder-footer-copyright-item footer-copyright"><p>Kaikki oikeudet pidätetään © 2020 Hiltsun Blogi / Jari Hiltunen  – Teeman tarjoaa <a href="https://pressmaximum.com/customify">Customify</a>.</p>
+</div></div></div></div>									</div>
+								</div>
+							</div>
+							</footer></div><!-- #page -->
+
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/hoverintent-js.js"></script>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/admin-bar.js"></script>
+<script type="text/javascript">
+/* <![CDATA[ */
+var SlimStatParams = {"ajaxurl":"https:\/\/hiltsu.dy.fi\/wp-admin\/admin-ajax.php","baseurl":"\/","dnt":"noslimstat,ab-item","ci":"YTo0OntzOjEyOiJjb250ZW50X3R5cGUiO3M6NDoicG9zdCI7czo4OiJjYXRlZ29yeSI7czo0NzoiMiw1NzEsMzksNzk5LDEzNzIsMTM3NCwxMzYzLDEzNzAsMTM2NCwxMzI1LDEzNzUiO3M6MTA6ImNvbnRlbnRfaWQiO2k6NTI0MTtzOjY6ImF1dGhvciI7czo2OiJqYXJwcGEiO30-.9372f3096242977f0dcd3d1c4e1678a0"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/wp-slimstat.js"></script>
+<script type="text/javascript">
+/* <![CDATA[ */
+var Customify_JS = {"is_rtl":"","css_media_queries":{"all":"%s","desktop":"%s","tablet":"@media screen and (max-width: 1024px) { %s }","mobile":"@media screen and (max-width: 568px) { %s }"},"sidebar_menu_no_duplicator":"1"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/theme.js"></script><div id="header-menu-sidebar" class="header-menu-sidebar menu-sidebar-panel dark-mode"><div id="header-menu-sidebar-bg" class="header-menu-sidebar-bg"><div id="header-menu-sidebar-inner" class="header-menu-sidebar-inner"><div class="builder-item-sidebar mobile-item--html"><div class="item--inner" data-item-id="html" data-section="header_html" style="transition-delay: 0.2s;"><div class="builder-header-html-item item--html"><p>Tiedon todellinen rakastaja tavoittelee luonnollisesti totuutta, eikä tyydy yleiseen mielipiteeseen (Platon 427-347 eKr.) </p>
+</div></div></div><div class="builder-item-sidebar mobile-item--search_box"><div class="item--inner" data-item-id="search_box" data-section="search_box" style="transition-delay: 0.4s;"><div class="header-search_box-item item--search_box">		<form role="search" class="header-search-form " action="https://hiltsu.dy.fi/">
+			<div class="search-form-fields">
+				<span class="screen-reader-text">Hae:</span>
+				
+				<input type="search" class="search-field" placeholder="Hae ..." name="s" title="Hae:">
+
+							</div>
+			<button type="submit" class="search-submit">
+				<svg aria-hidden="true" focusable="false" role="presentation" xmlns="http://www.w3.org/2000/svg" width="20" height="21" viewBox="0 0 20 21">
+					<path fill="currentColor" fill-rule="evenodd" d="M12.514 14.906a8.264 8.264 0 0 1-4.322 1.21C3.668 16.116 0 12.513 0 8.07 0 3.626 3.668.023 8.192.023c4.525 0 8.193 3.603 8.193 8.047 0 2.033-.769 3.89-2.035 5.307l4.999 5.552-1.775 1.597-5.06-5.62zm-4.322-.843c3.37 0 6.102-2.684 6.102-5.993 0-3.31-2.732-5.994-6.102-5.994S2.09 4.76 2.09 8.07c0 3.31 2.732 5.993 6.102 5.993z"></path>
+				</svg>
+			</button>
+		</form>
+		</div></div></div><div class="builder-item-sidebar mobile-item--primary-menu mobile-item--menu "><div class="item--inner" data-item-id="primary-menu" data-section="header_menu_primary" style="transition-delay: 0.6s;"><nav id="site-navigation-sidebar-mobile" class="site-navigation primary-menu primary-menu-sidebar nav-menu-mobile primary-menu-mobile style-plain"><ul id="menu-paavalikko" class="primary-menu-ul menu nav-menu"><li id="menu-item--sidebar-mobile-1244" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-1244 toggle--added"><span class="nav-toggle-icon"><i class="nav-icon-angle"></i></span><a href="https://hiltsu.dy.fi/"><span class="link-before">Alkuun<span class="nav-icon-angle">&nbsp;</span></span></a>
+<ul class="sub-menu sub-lv-0" style="overflow: hidden; height: 0px;">
+	<li id="menu-item--sidebar-mobile-1747" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-privacy-policy menu-item-1747"><a href="https://hiltsu.dy.fi/tietosuojaseloste/"><span class="link-before">Tietosuojaseloste</span></a></li>
+</ul>
+</li>
+<li id="menu-item--sidebar-mobile-1247" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor current-menu-parent current-post-parent menu-item-1247"><a href="https://hiltsu.dy.fi/category/harrastekanala/"><span class="link-before">Harrastekanala</span></a></li>
+<li id="menu-item--sidebar-mobile-1624" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-1624"><a href="https://hiltsu.dy.fi/category/yleinen/opiskelu/"><span class="link-before">Opiskelu</span></a></li>
+<li id="menu-item--sidebar-mobile-1246" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-1246"><a href="https://hiltsu.dy.fi/category/remontit/"><span class="link-before">Remontit</span></a></li>
+<li id="menu-item--sidebar-mobile-1601" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-1601"><a href="https://hiltsu.dy.fi/category/sukututkimus/"><span class="link-before">Sukututkimus</span></a></li>
+<li id="menu-item--sidebar-mobile-1776" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor current-menu-parent current-post-parent menu-item-1776"><a href="https://hiltsu.dy.fi/category/yleinen/tee-se-itse/"><span class="link-before">Tee se itse</span></a></li>
+<li id="menu-item--sidebar-mobile-1249" class="menu-item menu-item-type-taxonomy menu-item-object-category current-post-ancestor menu-item-1249"><a href="https://hiltsu.dy.fi/category/yleinen/"><span class="link-before">Yleinen</span></a></li>
+</ul></nav></div></div><div class="builder-item-sidebar mobile-item--social-icons"><div class="item--inner" data-item-id="social-icons" data-section="header_social_icons" style="transition-delay: 0.8s;"></div></div></div></div></div>
+<script type="text/javascript" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/wp-embed.js"></script>
+	<!--[if lte IE 8]>
+		<script type="text/javascript">
+			document.body.className = document.body.className.replace( /(^|\s)(no-)?customize-support(?=\s|$)/, '' ) + ' no-customize-support';
+		</script>
+	<![endif]-->
+	<!--[if gte IE 9]><!-->
+		<script type="text/javascript">
+			(function() {
+				var request, b = document.body, c = 'className', cs = 'customize-support', rcs = new RegExp('(^|\\s+)(no-)?'+cs+'(\\s+|$)');
+
+						request = true;
+		
+				b[c] = b[c].replace( rcs, ' ' );
+				// The customizer requires postMessage and CORS (if the site is cross domain).
+				b[c] += ( window.postMessage && request ? ' ' : ' no-' ) + cs;
+			}());
+		</script>
+	<!--<![endif]-->
+			<div id="wpadminbar" class="nojq">
+							<a class="screen-reader-shortcut" href="#wp-toolbar" tabindex="1">Siirry työkalupalkkiin</a>
+						<div class="quicklinks" id="wp-toolbar" role="navigation" aria-label="työkalupalkki">
+				<ul id="wp-admin-bar-root-default" class="ab-top-menu"><li id="wp-admin-bar-wp-logo" class="menupop"><a class="ab-item" aria-haspopup="true" href="https://hiltsu.dy.fi/wp-admin/about.php"><span class="ab-icon"></span><span class="screen-reader-text">Tietoa WordPressistä</span></a><div class="ab-sub-wrapper"><ul id="wp-admin-bar-wp-logo-default" class="ab-submenu"><li id="wp-admin-bar-about"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/about.php">Tietoa WordPressistä</a></li></ul><ul id="wp-admin-bar-wp-logo-external" class="ab-sub-secondary ab-submenu"><li id="wp-admin-bar-wporg"><a class="ab-item" href="https://fi.wordpress.org/">WordPress.org</a></li><li id="wp-admin-bar-documentation"><a class="ab-item" href="https://codex.wordpress.org/">Dokumentaatio</a></li><li id="wp-admin-bar-support-forums"><a class="ab-item" href="https://fi.forums.wordpress.org/">Tuki</a></li><li id="wp-admin-bar-feedback"><a class="ab-item" href="https://wordpress.org/support/forum/requests-and-feedback">Palaute</a></li></ul></div></li><li id="wp-admin-bar-site-name" class="menupop"><a class="ab-item" aria-haspopup="true" href="https://hiltsu.dy.fi/wp-admin/">Hiltsun Blogi</a><div class="ab-sub-wrapper"><ul id="wp-admin-bar-site-name-default" class="ab-submenu"><li id="wp-admin-bar-dashboard"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/">Ohjausnäkymä</a></li></ul><ul id="wp-admin-bar-appearance" class="ab-submenu"><li id="wp-admin-bar-themes"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/themes.php">Teemat</a></li><li id="wp-admin-bar-widgets"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/widgets.php">Vimpaimet</a></li><li id="wp-admin-bar-menus"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/nav-menus.php">Valikot</a></li></ul></div></li><li id="wp-admin-bar-customize" class="hide-if-no-customize"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/customize.php?url=https%3A%2F%2Fhiltsu.dy.fi%2F2020%2F05%2F27%2Finfluxdb-tietokannan-ja-grafanan-asennus-raspberryyn%2F%3Fpreview_id%3D5241%26preview_nonce%3Dc851fe68b3%26preview%3Dtrue">Mukauta</a></li><li id="wp-admin-bar-comments"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/edit-comments.php"><span class="ab-icon"></span><span class="ab-label awaiting-mod pending-count count-0" aria-hidden="true">0</span><span class="screen-reader-text comments-in-moderation-text">0 kommenttia tarkistettavana</span></a></li><li id="wp-admin-bar-new-content" class="menupop"><a class="ab-item" aria-haspopup="true" href="https://hiltsu.dy.fi/wp-admin/post-new.php"><span class="ab-icon"></span><span class="ab-label">Uusi</span></a><div class="ab-sub-wrapper"><ul id="wp-admin-bar-new-content-default" class="ab-submenu"><li id="wp-admin-bar-new-post"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/post-new.php">Artikkeli</a></li><li id="wp-admin-bar-new-media"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/media-new.php">Media</a></li><li id="wp-admin-bar-new-page"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/post-new.php?post_type=page">Sivu</a></li><li id="wp-admin-bar-new-user"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/user-new.php">Käyttäjä</a></li></ul></div></li><li id="wp-admin-bar-edit"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/post.php?post=5241&amp;action=edit">Muokkaa artikkelia</a></li><li id="wp-admin-bar-easy-updates-manager-admin-bar" class="menupop"><a class="ab-item" aria-haspopup="true" href="https://hiltsu.dy.fi/wp-admin/index.php?page=mpsum-update-options">Updates</a><div class="ab-sub-wrapper"><ul id="wp-admin-bar-easy-updates-manager-admin-bar-default" class="ab-submenu"><li id="wp-admin-bar-easy-updates-manager-admin-bar-general"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/index.php?page=mpsum-update-options&amp;tab=general">General</a></li><li id="wp-admin-bar-easy-updates-manager-admin-bar-plugins"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/index.php?page=mpsum-update-options&amp;tab=plugins">Plugins</a></li><li id="wp-admin-bar-easy-updates-manager-admin-bar-themes"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/index.php?page=mpsum-update-options&amp;tab=themes">Themes</a></li><li id="wp-admin-bar-easy-updates-manager-admin-bar-logs"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/index.php?page=mpsum-update-options&amp;tab=logs">Logs</a></li><li id="wp-admin-bar-easy-updates-manager-admin-bar-advanced"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/index.php?page=mpsum-update-options&amp;tab=advanced">Advanced</a></li><li id="wp-admin-bar-easy-updates-manager-admin-bar-premium"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/index.php?page=mpsum-update-options&amp;tab=premium">Premium</a></li></ul></div></li></ul><ul id="wp-admin-bar-top-secondary" class="ab-top-secondary ab-top-menu"><li id="wp-admin-bar-search" class="admin-bar-search"><div class="ab-item ab-empty-item" tabindex="-1"><form action="https://hiltsu.dy.fi/" method="get" id="adminbarsearch"><input class="adminbar-input" name="s" id="adminbar-search" type="text" maxlength="150"><label for="adminbar-search" class="screen-reader-text">Etsi</label><input type="submit" class="adminbar-button" value="Etsi"></form></div></li><li id="wp-admin-bar-my-account" class="menupop with-avatar"><a class="ab-item" aria-haspopup="true" href="https://hiltsu.dy.fi/wp-admin/profile.php">Tervehdys, <span class="display-name">Thinker</span><img alt="" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/5fef19100821effe91f4ef6bd11f459e_002.jpg" srcset="https://secure.gravatar.com/avatar/5fef19100821effe91f4ef6bd11f459e?s=52&amp;r=g 2x" class="avatar avatar-26 photo" width="26" height="26"></a><div class="ab-sub-wrapper"><ul id="wp-admin-bar-user-actions" class="ab-submenu"><li id="wp-admin-bar-user-info"><a class="ab-item" tabindex="-1" href="https://hiltsu.dy.fi/wp-admin/profile.php"><img alt="" src="InfluxDB-tietokannan%20ja%20Grafanan%20asennus%20Raspberryyn%20%E2%80%93%20Hiltsun%20Blogi_files/5fef19100821effe91f4ef6bd11f459e.jpg" srcset="https://secure.gravatar.com/avatar/5fef19100821effe91f4ef6bd11f459e?s=128&amp;r=g 2x" class="avatar avatar-64 photo" width="64" height="64"><span class="display-name">Thinker</span><span class="username">jari</span></a></li><li id="wp-admin-bar-edit-profile"><a class="ab-item" href="https://hiltsu.dy.fi/wp-admin/profile.php">Muokkaa omaa profiilia</a></li><li id="wp-admin-bar-logout"><a class="ab-item" href="https://hiltsu.dy.fi/wp-login.php?action=logout&amp;_wpnonce=696b432e2d">Kirjaudu ulos</a></li></ul></div></li></ul>			</div>
+						<a class="screen-reader-shortcut" href="https://hiltsu.dy.fi/wp-login.php?action=logout&amp;_wpnonce=696b432e2d">Kirjaudu ulos</a>
+					</div>
+
+		
+
+
+<div id="wfboxOverlay" style="display: none;"></div><div id="wordfenceBox" class="" role="dialog" tabindex="-1" style="display: none;"><div id="wfboxWrapper"><div><div id="wfboxTopLeft" style="float: left;"></div><div id="wfboxTopCenter" style="float: left;"></div><div id="wfboxTopRight" style="float: left;"></div></div><div style="clear: left;"><div id="wfboxMiddleLeft" style="float: left;"></div><div id="wfboxContent" style="float: left;"><div id="wfboxTitle" style="float: left;"></div><div id="wfboxCurrent" style="float: left;"></div><button type="button" id="wfboxPrevious"></button><button type="button" id="wfboxNext"></button><button type="button" id="wfboxSlideshow"></button><div id="wfboxLoadingOverlay" style="float: left;"></div><div id="wfboxLoadingGraphic" style="float: left;"></div></div><div id="wfboxMiddleRight" style="float: left;"></div></div><div style="clear: left;"><div id="wfboxBottomLeft" style="float: left;"></div><div id="wfboxBottomCenter" style="float: left;"></div><div id="wfboxBottomRight" style="float: left;"></div></div></div><div style="position: absolute; width: 9999px; visibility: hidden; display: none; max-width: none;"></div></div></body></html>
