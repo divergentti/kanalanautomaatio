@@ -48,13 +48,13 @@ logging.info(str(args.code) +
 rfdevice.tx_code(args.code, args.protocol, args.pulselength)
 rfdevice.cleanup()
 
-# Lahetetaan mqtt-brokerille tieto
-if "3669736" in str(args.code): #kiinni
- statustieto = "kiinni"
-if "3669729" in str(args.code): #auki
- statustieto = "auki"
+ Lahetetaan mqtt-brokerille tieto
+if args.code == 3669736: #kiinni
+ statustieto = 0 #tilabitti
+elif args.code == 3669729: #auki
+   statustieto = 1 #tilabitti
 else:
- statustieto = str(args.code) #tallennetaan koodi jota koetettiin
+ statustieto = 2 #virhebitti eli kaukosaatimen koodia ei tunnisteta
 
 rpilahetin.publish(luukkustatus, payload=statustieto, retain=True)
 rpilahetin.disconnect()
