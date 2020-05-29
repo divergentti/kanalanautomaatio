@@ -21,14 +21,16 @@ while True:
             # print ("Lampo: ") + str(lampo22)
             mqttanturi.publish(kanala_dht22_lampo, payload=lampo22, retain=True)
         else:
-	 print ("Lampotilatietoa ei saatavilla")
+	 print (time.strftime("%H:%M:%S ") + "Lampotilatietoa ei saatavilla")
 	if kosteus22 is not None:
             kosteus22 = '{:.1f}'.format(kosteus22)
            # print ("Kosteus: ") + str(kosteus22)
             mqttanturi.publish(kanala_dht22_kosteus, payload=kosteus22, retain=True)
 	else:
-	 print ("Kosteustietoa ei saatavilla")        
-	time.sleep(600)
+	 print (time.strftime("%H:%M:%S ") + "Kosteustietoa ei saatavilla")        
+
+        time.sleep(600)
+
     except (EOFError, SystemExit, KeyboardInterrupt):
         mqttanturi.disconnect()
         sys.exit()
