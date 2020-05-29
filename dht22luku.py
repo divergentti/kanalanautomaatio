@@ -30,5 +30,5 @@ while True:
 	 print ("Kosteustietoa ei saatavilla")        
 	time.sleep(600)
     except (EOFError, SystemExit, KeyboardInterrupt):
-        mtqqanturi.disconnect()
+        mqttanturi.disconnect()
         sys.exit()
