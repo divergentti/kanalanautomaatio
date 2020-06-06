@@ -1,0 +1,2 @@
+#vastaavasti auki tapahtuu samalla tapaa. tätä voi kutsua esim. crontabista
+python3 laheta433.py  -p350 -t1 3669736
