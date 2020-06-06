@@ -1,0 +1,13 @@
+SSID1 = 'ensimmainen'
+SALASANA1 = 'salari'
+SSID2 = 'toinen'
+SALASANA2 = 'salari'
+MQTT_SERVERI = 'raspin ip'
+MQTT_PORTTI = '1883'
+MQTT_KAYTTAJA = 'kayttaja'
+MQTT_SALASANA = 'salari'
+CLIENT_ID = "ESP32-ulkoanturi"
+PINNI_NUMERO = 4
+DHT22_LAMPO = b'kanala/ulko/lampo'
+DHT22_KOSTEUS = b'kanala/ulko/kosteus'
+RELE_OHJAUS = b'kanala/ulko/rele'
