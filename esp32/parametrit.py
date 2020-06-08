@@ -11,3 +11,5 @@ PINNI_NUMERO = 4
 DHT22_LAMPO = b'kanala/ulko/lampo'
 DHT22_KOSTEUS = b'kanala/ulko/kosteus'
 RELE_OHJAUS = b'kanala/ulko/rele'
+RELE1PINNI = 26
+RELE2PINNI = 27
