@@ -9,43 +9,54 @@ from umqttsimple import MQTTClient
 #tuodaan parametrit
 from parametrit import CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, \
   MQTT_SALASANA, DHT22_LAMPO, DHT22_KOSTEUS, RELE_OHJAUS, PINNI_NUMERO, \
-  DHT22_LAMPO_KORJAUSKERROIN, DHT22_KOSTEUS_KORJAUSKERROIN
+  DHT22_LAMPO_KORJAUSKERROIN, DHT22_KOSTEUS_KORJAUSKERROIN, \
+  RELE1PINNI, RELE2PINNI
 
 anturi = dht.DHT22(Pin(PINNI_NUMERO))
 #virhelaskurin idea on tuottaa bootti jos jokin menee pieleen liian usein
 virhe = 0
+client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
 def rele_tila(rele_ohjaus, msg):
+  # Huom! Releet kytketty NC (Normally Closed) jolloin 0 = on
+  # Mikali rele kytketty NO (Normally Open), arvo 1 = on
+  # Pinni jolla ohjataan rele #1
+  rele1 = Pin(RELE1PINNI, Pin.OUT)
+  # Pinni jolla ohjataan rele #2
+  rele2 = Pin(RELE2PINNI, Pin.OUT)
+  #0 = molemmat pois
+  #1 = rele 1 on
+  #2 = rele 2 on
+  #3 = rele 1 off
+  #4 = rele 2 off
   print((rele_ohjaus, msg))
-  if rele_ohjaus == RELE_OHJAUS and msg == b'on':
-    print('Laita rele on')
-    #jatka koodia
+  if rele_ohjaus == RELE_OHJAUS and msg == b'0':
+    print('Laita kaikki releet off')
+    rele1.value(1)
+    rele2.value(1)
+  if rele_ohjaus == RELE_OHJAUS and msg == b'1':
+    print('Laita rele 1 on')
+    rele1.value(0)
+  if rele_ohjaus == RELE_OHJAUS and msg == b'2':
+    print('Laita rele 2 on')
+    rele2.value(0)
+  if rele_ohjaus == RELE_OHJAUS and msg == b'3':
+    print('Laita rele 1 off')
+    rele1.value(1)
+  if rele_ohjaus == RELE_OHJAUS and msg == b'4':
+    print('Laita rele 2 off')
+    rele2.value(1)
 
-def connect_and_subscribe():
+def lue_lampo_ja_yhdista():
   global virhe
-  print("Yhdistetaan mqtt-palvelimeen %s ja tilataan aihe %s..." % (MQTT_SERVERI, RELE_OHJAUS))
-  client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
-  try:
-    client.connect()
-  except OSError as e:
-    virhe = virhe + 1
-    return False
-  client.set_callback(rele_tila)
-  client.subscribe(RELE_OHJAUS)
-  print('Yhdistetty %s MQTT brokeriin, tilattu %s aihe' % (MQTT_SERVERI, RELE_OHJAUS))
-  vilkuta_ledi(1)
-  virhe = 0
-  return True
 
-
-def tallenna_lampo_kosteus_tiedot():
-  global virhe
   try:
     anturi.measure()
   except OSError as e:
     print("Sensoria ei voida lukea!")
     virhe = virhe + 1
     vilkuta_ledi(5)
+    return False
   lampo = anturi.temperature() * DHT22_LAMPO_KORJAUSKERROIN
   kosteus = anturi.humidity() * DHT22_KOSTEUS_KORJAUSKERROIN
   print('Lampo: %3.1f C' % lampo)
@@ -53,6 +64,7 @@ def tallenna_lampo_kosteus_tiedot():
   vilkuta_ledi(1)
   print("Yhdistetaan mqtt-palvelimeen %s ..." %MQTT_SERVERI)
   client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
+
   try:
     client.connect()
     #yhdistetaan joka kerran, tulee socket error mosquittoon
@@ -61,6 +73,10 @@ def tallenna_lampo_kosteus_tiedot():
     vilkuta_ledi(5)
     virhe = virhe + 1
     return False
+  # releen ohjaus
+  client.set_callback(rele_tila)
+  client.subscribe(RELE_OHJAUS)
+
   lampo='{:.1f}'.format(lampo)
   kosteus = '{:.1f}'.format(kosteus)
 
@@ -80,6 +96,9 @@ def tallenna_lampo_kosteus_tiedot():
     return False
   vilkuta_ledi(1)
   print('Yhdistetty %s MQTT brokeriin, tallennettu %s %s' % (MQTT_SERVERI, lampo, kosteus))
+  print('Tarkistetaan ohjaustietoa...')
+  client.check_msg()
+  print("Odotetaan seuraavaa arvoa...")
   time.sleep(60)
   virhe = 0
   return True
@@ -101,12 +120,14 @@ def vilkuta_ledi(kertaa):
     utime.sleep_ms(100)
 
 while virhe < 5:
+  print("Virhelaskuri: %s" % virhe)
   try:
-    client = connect_and_subscribe()
+    # client = connect_and_subscribe()
+    lue_lampo_ja_yhdista()
   except OSError as e:
     print("Virhelaskuri: %s" % virhe)
-  tallenna_lampo_kosteus_tiedot()
-  print("Virhelaskuri: %s" % virhe)
+  #tallenna_lampo_kosteus_tiedot()
+
 
 #Virheita liikaa
 restart_and_reconnect()
