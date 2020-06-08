@@ -25,27 +25,27 @@ def rele_tila(rele_ohjaus, msg):
   # Pinni jolla ohjataan rele #2
   rele2 = Pin(RELE2PINNI, Pin.OUT)
   #0 = molemmat pois
-  #1 = rele 1 on
-  #2 = rele 2 on
-  #3 = rele 1 off
-  #4 = rele 2 off
+  #1 = rele 1 on, rele 2 off
+  #2 = molemmat on
+  #3 = rele 1 off, rele 2 on
   print((rele_ohjaus, msg))
   if rele_ohjaus == RELE_OHJAUS and msg == b'0':
     print('Laita kaikki releet off')
     rele1.value(1)
     rele2.value(1)
   if rele_ohjaus == RELE_OHJAUS and msg == b'1':
-    print('Laita rele 1 on')
+    print('Laita rele 1 on, rele 2 off')
     rele1.value(0)
+    rele2.value(1)
   if rele_ohjaus == RELE_OHJAUS and msg == b'2':
-    print('Laita rele 2 on')
+    print('Laita molemmat releet on')
+    rele1.value(0)
     rele2.value(0)
   if rele_ohjaus == RELE_OHJAUS and msg == b'3':
-    print('Laita rele 1 off')
+    print('Laita rele 1 off, rele 2 on')
     rele1.value(1)
-  if rele_ohjaus == RELE_OHJAUS and msg == b'4':
-    print('Laita rele 2 off')
-    rele2.value(1)
+    rele2.value(0)
+
 
 def lue_lampo_ja_yhdista():
   global virhe
