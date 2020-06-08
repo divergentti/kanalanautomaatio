@@ -122,12 +122,10 @@ def vilkuta_ledi(kertaa):
 while virhe < 5:
   print("Virhelaskuri: %s" % virhe)
   try:
-    # client = connect_and_subscribe()
-    lue_lampo_ja_yhdista()
+  lue_lampo_ja_yhdista()
   except OSError as e:
     print("Virhelaskuri: %s" % virhe)
-  #tallenna_lampo_kosteus_tiedot()
-
+  
 
 #Virheita liikaa
 restart_and_reconnect()
