@@ -45,23 +45,23 @@ def rele_tila(rele_ohjaus, msg):
     print('Laita rele 1 off, rele 2 on')
     rele1.value(1)
     rele2.value(0)
+  vilkuta_ledi(2)
+  time.sleep(1)
 
 
 def lue_lampo_ja_yhdista():
   global virhe
-
+  vilkuta_ledi(1)
   try:
     anturi.measure()
   except OSError as e:
     print("Sensoria ei voida lukea!")
     virhe = virhe + 1
-    vilkuta_ledi(5)
     return False
   lampo = anturi.temperature() * DHT22_LAMPO_KORJAUSKERROIN
   kosteus = anturi.humidity() * DHT22_KOSTEUS_KORJAUSKERROIN
   print('Lampo: %3.1f C' % lampo)
   print('Kosteus: %3.1f %%' % kosteus)
-  vilkuta_ledi(1)
   print("Yhdistetaan mqtt-palvelimeen %s ..." %MQTT_SERVERI)
   client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
@@ -70,7 +70,6 @@ def lue_lampo_ja_yhdista():
     #yhdistetaan joka kerran, tulee socket error mosquittoon
   except OSError as e:
     print("Ei voida yhdistaa! ")
-    vilkuta_ledi(5)
     virhe = virhe + 1
     return False
   # releen ohjaus
@@ -84,20 +83,18 @@ def lue_lampo_ja_yhdista():
     client.publish(DHT22_LAMPO, str(lampo))
   except OSError as e:
     print("Arvoa %s ei voida julkistaa! " % str(lampo))
-    vilkuta_ledi(5)
     virhe = virhe + 1
     return False
   try:
     client.publish(DHT22_KOSTEUS, str(kosteus))
   except OSError as e:
     print("Arvoa %s ei voida julkistaa! " % str(kosteus))
-    vilkuta_ledi(5)
     virhe = virhe + 1
     return False
-  vilkuta_ledi(1)
   print('Yhdistetty %s MQTT brokeriin, tallennettu %s %s' % (MQTT_SERVERI, lampo, kosteus))
   print('Tarkistetaan ohjaustietoa...')
   client.check_msg()
+  vilkuta_ledi(2)
   print("Odotetaan seuraavaa arvoa...")
   time.sleep(60)
   virhe = 0
@@ -106,7 +103,7 @@ def lue_lampo_ja_yhdista():
 
 def restart_and_reconnect():
   print('Ongelmia. Boottaillaan ...')
-  vilkuta_ledi(10)
+  vilkuta_ledi(5)
   time.sleep(5)
   machine.reset()
   #resetoidaan
@@ -122,10 +119,11 @@ def vilkuta_ledi(kertaa):
 while virhe < 5:
   print("Virhelaskuri: %s" % virhe)
   try:
-  lue_lampo_ja_yhdista()
+    lue_lampo_ja_yhdista()
   except OSError as e:
     print("Virhelaskuri: %s" % virhe)
-  
+  #tallenna_lampo_kosteus_tiedot()
+
 
 #Virheita liikaa
 restart_and_reconnect()
