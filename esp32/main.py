@@ -24,6 +24,7 @@ anturi = dht.DHT22(Pin(PINNI_NUMERO))
 #virhelaskurin idea on tuottaa bootti jos jokin menee pieleen liian usein
 anturivirhe = 0
 relevirhe = 0
+edellinen_releviesti = 0
 client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
 def mqtt_palvelin_yhdista():
@@ -41,6 +42,7 @@ def mqtt_palvelin_yhdista():
   return True
 
 def rele_tila(rele_ohjaus, msg):
+  global edellinen_releviesti
   # Huom! Releet kytketty NC (Normally Closed) jolloin 0 = on
   # Mikali rele kytketty NO (Normally Open), arvo 1 = on
   # Pinni jolla ohjataan rele #1
@@ -53,30 +55,36 @@ def rele_tila(rele_ohjaus, msg):
   #3 = rele 1 off, rele 2 on
   print((rele_ohjaus, msg))
   # testataan onko tullut uusi arvo vai ei
-
+  if edellinen_releviesti == msg:
+    print("Skipataan kun tila onkin sama kuin ennen...")
+    return
   if rele_ohjaus == RELE_OHJAUS and msg == b'0':
     print('Laita kaikki releet off')
     rele1.value(1)
     rele2.value(1)
+    edellinen_releviesti = msg
   if rele_ohjaus == RELE_OHJAUS and msg == b'1':
     print('Laita rele 1 on, rele 2 off')
     rele1.value(0)
     rele2.value(1)
+    edellinen_releviesti = msg
   if rele_ohjaus == RELE_OHJAUS and msg == b'2':
     print('Laita molemmat releet on')
     rele1.value(0)
     rele2.value(0)
+    edellinen_releviesti = msg
   if rele_ohjaus == RELE_OHJAUS and msg == b'3':
     print('Laita rele 1 off, rele 2 on')
     rele1.value(1)
     rele2.value(0)
+    edellinen_releviesti = msg
   vilkuta_ledi(2)
   time.sleep(1)
 
 def lue_releen_status():
   global relevirhe
   vilkuta_ledi(1)
-  print('Tarkistetaan releen ohjaustietoa...')
+  print('Tarkistetaan onko uutta releen ohjaustietoa...')
   try:
     client.check_msg()
   except OSError as e:
@@ -146,7 +154,7 @@ def anturiluuppi():
     print("Anturiluupin virhelaskuri: %s" % anturivirhe)
     # Virheita liikaa
     restart_and_reconnect()
-  time.sleep(20)
+  time.sleep(10)
   yield None
 
 def releluuppi():
@@ -170,7 +178,9 @@ except OSError as e:
   print("Ei onnistunut yhteys mqtt-palvelimeen %s" % MQTT_SERVERI)
   restart_and_reconnect()
 
-TehtavaJono = [anturiluuppi(), releluuppi()]
+#suoritetaan anturiluuppi ja 9 x relelooppi
+TehtavaJono = [anturiluuppi(), releluuppi(), releluuppi(), releluuppi(),releluuppi(),\
+               releluuppi(), releluuppi(), releluuppi(), releluuppi(), releluuppi()]
 
 while True:
   # loopataan ellei virheita muodostu
@@ -179,3 +189,4 @@ while True:
 
 # Jos kaikki menee pieleen
 restart_and_reconnect()
+
