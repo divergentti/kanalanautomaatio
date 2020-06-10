@@ -9,7 +9,8 @@ import time
 # pip3 install adafruit-blinka
 # pip3 install adafruit-circuitpython-dht
 # sudo apt-get install libgpiod2
-import adafruit_dht
+# import adafruit_dht uusi mutta huono, ei toimi!
+import Adafruit_DHT # vanha toimiva adafruit-kirjasto
 # muuttujat tuodaan parametrit.py_tiedostosta
 from parametrit import ANTURINIMI, MQTTKAYTTAJA, MQTTSALARI, MQTTSERVERI, MQTTSERVERIPORTTI, \
     AIHELAMPO, AIHEKOSTEUS, DHT22PINNI, LUKUVALI
@@ -18,12 +19,13 @@ mqttanturi = mqtt.Client(ANTURINIMI)   # mqtt objektin luominen
 mqttanturi.username_pw_set(MQTTKAYTTAJA, MQTTSALARI) # mqtt useri ja salari
 mqttanturi.connect(MQTTSERVERI, port=MQTTSERVERIPORTTI, keepalive=60) # Yhteys brokeriin
 mqttanturi.loop_start() # Loopin kaynnistys
-dhtLaite = adafruit_dht.DHT22(DHT22PINNI) #DHT-anturiobjekti
+# dhtLaite = adafruit_dht.DHT22(DHT22PINNI) # tarpeeton DHT-anturiobjekti
 
 while True:
     try:
-        kosteus = dhtLaite.humidity
-        lampo = dhtLaite.temperature
+        # kosteus = dhtLaite.humidity
+        # lampo = dhtLaite.temperature
+        kosteus, lampo = Adafruit_DHT.read_retry(22, DHT22PINNI)
         if lampo is not None:
             lampo ='{:.1f}'.format(lampo)
             print("Lampo: %s" % str(lampo))
