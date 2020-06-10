@@ -1,0 +1,9 @@
+ANTURINIMI = 'jotain-dht22'
+MQTTKAYTTAJA = 'kayttaja'
+MQTTSALARI = 'salari'
+MQTTSERVERI = 'localhost'
+MQTTSERVERIPORTTI = 1883
+AIHELAMPO = 'kanala/sisa/lampo'
+AIHEKOSTEUS = 'kanala/sisa/kosteus'
+DHT22PINNI = 4
+LUKUVALI = 60
