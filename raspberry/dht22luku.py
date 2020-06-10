@@ -1,36 +1,41 @@
-# suorita python-komennolla!
-import paho.mqtt.client as mqtt #mqtt kirjasto
+# !/usr/bin/python3
+# jos CRON:ssa, ps -A ja kill prosessi ensin!
+# 10.6.2020 Jari Hiltunen
+import paho.mqtt.client as mqtt # tuodaan mqtt kirjasto
+# asennus pip3 install paho-mqtt
 import time
-import sys
-import Adafruit_DHT #adafruit-kirjasto
+# muiden komponenttien asennus:
+# pip3 install RPI.GPIO
+# pip3 install adafruit-blinka
+# pip3 install adafruit-circuitpython-dht
+# sudo apt-get install libgpiod2
+import adafruit_dht
+# muuttujat tuodaan parametrit.py_tiedostosta
+from parametrit import ANTURINIMI, MQTTKAYTTAJA, MQTTSALARI, MQTTSERVERI, MQTTSERVERIPORTTI, \
+    AIHELAMPO, AIHEKOSTEUS, DHT22PINNI, LUKUVALI
 
-mqttanturi = mqtt.Client("kanalasisa-dht22") #mqtt objektin luominen
-mqttanturi.username_pw_set("kayttaja","salari") #mqtt useri ja salari
-mqttanturi.connect("localhost", port=1883, keepalive=60) #Yhteys brokeriin (sama laite)
-mqttanturi.loop_start() #Loopin kaynnistys
-
-kanala_dht22_lampo = "kanala/sisa/lampo"
-kanala_dht22_kosteus = "kanala/sisa/kosteus"
+mqttanturi = mqtt.Client(ANTURINIMI)   # mqtt objektin luominen
+mqttanturi.username_pw_set(MQTTKAYTTAJA, MQTTSALARI) # mqtt useri ja salari
+mqttanturi.connect(MQTTSERVERI, port=MQTTSERVERIPORTTI, keepalive=60) # Yhteys brokeriin
+mqttanturi.loop_start() # Loopin kaynnistys
+dhtLaite = adafruit_dht.DHT22(DHT22PINNI) #DHT-anturiobjekti
 
 while True:
     try:
-        kosteus22, lampo22 = Adafruit_DHT.read_retry(22, 4) #22 on sensorin tyyppi, 4 on GPIO pinni, ei fyysinen pinni
-       
-        if lampo22 is not None:
-            lampo22 =  '{:.1f}'.format(lampo22)
-            # print ("Lampo: ") + str(lampo22)
-            mqttanturi.publish(kanala_dht22_lampo, payload=lampo22, retain=True)
+        kosteus = dhtLaite.humidity
+        lampo = dhtLaite.temperature
+        if lampo is not None:
+            lampo ='{:.1f}'.format(lampo)
+            print("Lampo: %s" % str(lampo))
+            mqttanturi.publish(AIHELAMPO, payload=lampo, retain=True)
         else:
-	 print (time.strftime("%H:%M:%S ") + "Lampotilatietoa ei saatavilla")
-	if kosteus22 is not None:
-            kosteus22 = '{:.1f}'.format(kosteus22)
-           # print ("Kosteus: ") + str(kosteus22)
-            mqttanturi.publish(kanala_dht22_kosteus, payload=kosteus22, retain=True)
-	else:
-	 print (time.strftime("%H:%M:%S ") + "Kosteustietoa ei saatavilla")        
-
-        time.sleep(600)
-
-    except (EOFError, SystemExit, KeyboardInterrupt):
-        mqttanturi.disconnect()
-        sys.exit()
+         print (time.strftime("%H:%M:%S ") + "Lampotilatietoa ei saatavilla")
+        if kosteus is not None:
+           kosteus = '{:.1f}'.format(kosteus)
+           print("Kosteus: %s" % str(kosteus))
+           mqttanturi.publish(AIHEKOSTEUS, payload=kosteus, retain=True)
+        else:
+            print(time.strftime("%H:%M:%S ") + "Kosteustietoa ei saatavilla")
+        time.sleep(LUKUVALI) # lukufrekvenssi
+    except RuntimeError as error:
+        print(error.args[0])
