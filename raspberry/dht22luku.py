@@ -4,12 +4,6 @@
 import paho.mqtt.client as mqtt # tuodaan mqtt kirjasto
 # asennus pip3 install paho-mqtt
 import time
-# muiden komponenttien asennus:
-# pip3 install RPI.GPIO
-# pip3 install adafruit-blinka
-# pip3 install adafruit-circuitpython-dht
-# sudo apt-get install libgpiod2
-# import adafruit_dht uusi mutta huono, ei toimi!
 import Adafruit_DHT # vanha toimiva adafruit-kirjasto
 # muuttujat tuodaan parametrit.py_tiedostosta
 from parametrit import ANTURINIMI, MQTTKAYTTAJA, MQTTSALARI, MQTTSERVERI, MQTTSERVERIPORTTI, \
@@ -23,8 +17,7 @@ mqttanturi.loop_start() # Loopin kaynnistys
 
 while True:
     try:
-        # kosteus = dhtLaite.humidity
-        # lampo = dhtLaite.temperature
+       
         kosteus, lampo = Adafruit_DHT.read_retry(22, DHT22PINNI)
         if lampo is not None:
             lampo ='{:.1f}'.format(lampo)
