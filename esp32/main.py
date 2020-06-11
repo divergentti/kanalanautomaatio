@@ -33,7 +33,13 @@ edellinen_releviesti = 0
 client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
 def ratkaise_aika():
-    aika = str((utime.localtime(utime.time())))
+    (vuosi, kuukausi, kkpaiva, tunti, minuutti, sekunti, viikonpva, vuosipaiva) = utime.localtime()
+    paivat = {0: "Ma", 1: "Ti", 2: "Ke", 3: "To", 4: "Pe", 5: "La", 6: "Su"}
+    kuukaudet = {1: "Tam", 2: "Hel", 3: "Maa", 4: "Huh", 5: "Tou", 6: "Kes", 7: "Hei", 8: "Elo",
+              9: "Syy", 10: "Lok", 11: "Mar", 12: "Jou"}
+    #.format(paivat[viikonpva]), format(kuukaudet[kuukausi]),
+    aika = "%s.%s.%s klo %s:%s:%s" % (viikonpva, kuukausi, \
+           vuosi, "{:02d}".format(tunti), "{:02d}".format(minuutti), "{:02d}".format(sekunti))
     return aika
 
 
