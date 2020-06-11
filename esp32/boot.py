@@ -11,7 +11,7 @@ import gc
 gc.collect()
 from time import sleep
 # Parametrit tuodaan parametrit.py-tiedostosta
-from parametrit import SSID1, SSID2,SALASANA1,SALASANA2, NTPPALVELIN
+from parametrit import SSID1, SSID2,SALASANA1,SALASANA2
 #yhdistetty tieto
 
 wificlient_if = network.WLAN(network.STA_IF)
