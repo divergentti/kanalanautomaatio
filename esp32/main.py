@@ -38,7 +38,7 @@ def ratkaise_aika():
     kuukaudet = {1: "Tam", 2: "Hel", 3: "Maa", 4: "Huh", 5: "Tou", 6: "Kes", 7: "Hei", 8: "Elo",
               9: "Syy", 10: "Lok", 11: "Mar", 12: "Jou"}
     #.format(paivat[viikonpva]), format(kuukaudet[kuukausi]),
-    aika = "%s.%s.%s klo %s:%s:%s" % (viikonpva, kuukausi, \
+    aika = "%s.%s.%s klo %s:%s:%s" % (kkpaiva, kuukausi, \
            vuosi, "{:02d}".format(tunti), "{:02d}".format(minuutti), "{:02d}".format(sekunti))
     return aika
 
