@@ -5,7 +5,7 @@
 # Kaksi ledin vilautusta = toiminta saatettu loppuun
 # 10 ledin vilautusta = virhe!
 # Osa kanalan automaatioprojektia, https://hiltsu.dy.fi
-# Jari Hiltunen 9.6.2020
+# Jari Hiltunen 13.6.2020
 import time
 import utime
 import machine
@@ -22,14 +22,16 @@ sta_if = network.WLAN(network.STA_IF)
 from parametrit import CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, \
     MQTT_SALASANA, DHT22_LAMPO, DHT22_KOSTEUS, RELE_OHJAUS, PINNI_NUMERO, \
     DHT22_LAMPO_KORJAUSKERROIN, DHT22_KOSTEUS_KORJAUSKERROIN, \
-    RELE1PINNI, RELE2PINNI
+    RELE1PINNI, RELE2PINNI, ANTURI_LUKUVALI, RELE_LUKUVALI
 
 # dht-kirjasto tukee muitakin antureita kuin dht22
 anturi = dht.DHT22(Pin(PINNI_NUMERO))
 # virhelaskurin idea on tuottaa bootti jos jokin menee pieleen liian usein
-anturivirhe = 0
-relevirhe = 0
-edellinen_releviesti = 0
+anturivirhe = 0 # virhelaskuria varten
+anturi_looppi_aika = time.time() # edellinen kerta kun anturi on luettu
+relevirhe = 0 # virhelaskuria varten
+rele_looppi_aika = time.time() # edellinen kerta kun rele on luettu
+edellinen_releviesti = 0 # edellinen releen tilaviesti
 client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
 def ratkaise_aika():
@@ -192,7 +194,8 @@ def vilkuta_ledi(kertaa):
 
 
 def anturiluuppi():
-    while anturivirhe < 5:
+    global anturi_looppi_aika
+    if anturivirhe < 5:
         aika = ratkaise_aika()
         print("%s: Anturiluupin virhelaskuri: %s" % (aika, anturivirhe))
         try:
@@ -201,12 +204,13 @@ def anturiluuppi():
             print("%s: Anturiluupin virhelaskuri: %s" % (aika, anturivirhe))
             # Virheita liikaa
             restart_and_reconnect()
-        time.sleep(10)
-        yield None
+        anturi_looppi_aika = time.time()
+    return
 
 
 def releluuppi():
-    while relevirhe < 5:
+    global rele_looppi_aika
+    if relevirhe < 5:
         aika = ratkaise_aika()
         print("%s: Releloopin virhelaskuri: %s" % (aika, relevirhe))
         try:
@@ -215,12 +219,8 @@ def releluuppi():
             print("%s: Releloopin virhelaskuri: %s" % (aika, relevirhe))
             # Virheita liikaa
             restart_and_reconnect()
-        time.sleep(10)
-        yield None
-
-
-# annetaan verkon tasaantua par isekkaa
-time.sleep(2)
+        rele_looppi_aika = time.time()
+    return
 
 try:
     mqtt_palvelin_yhdista()
@@ -229,13 +229,15 @@ except OSError as e:
     print("%s: Ei onnistunut yhteys mqtt-palvelimeen %s" % (aika, MQTT_SERVERI))
     restart_and_reconnect()
 
-# suoritetaan anturiluuppi ja 9 x relelooppi
-TehtavaJono = [anturiluuppi(), releluuppi(), releluuppi(), releluuppi(), releluuppi(), \
-               releluuppi(), releluuppi(), releluuppi(), releluuppi(), releluuppi()]
-
 while True:
-    # loopataan ellei virheita muodostu
-    for task in TehtavaJono:
-        next(task)
-    else:
-        restart_and_reconnect()
+    kulunut_anturi_aika = (time.time() - anturi_looppi_aika)
+    kulunut_rele_aika = (time.time() - rele_looppi_aika)
+    if (RELE_LUKUVALI <= ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI):
+        releluuppi()
+    if (RELE_LUKUVALI > ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI):
+        releluuppi()
+    if (ANTURI_LUKUVALI <= RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI):
+        anturiluuppi()
+    if (ANTURI_LUKUVALI > RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI):
+        anturiluuppi()
+    pass
