@@ -5,6 +5,8 @@ import micropython
 import network
 from ntptime import settime
 import esp
+import webrepl #webbihallinta - asenna komennolla import webrepl_setup
+webrepl.start()
 esp.osdebug(None)
 #roskankeruuproseduuri
 import gc
