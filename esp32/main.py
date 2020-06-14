@@ -64,7 +64,6 @@ def mqtt_palvelin_yhdista():
     else:
         print("%s: Yhteys on poikki! " % aika)
         # client.disconnect()
-        time.sleep(10)
         restart_and_reconnect()
         return False
 
@@ -108,7 +107,6 @@ def rele_tila(rele_ohjaus, msg):
         rele2.value(0)
         edellinen_releviesti = msg
     vilkuta_ledi(2)
-    time.sleep(1)
 
 
 def lue_releen_status():
@@ -129,7 +127,6 @@ def lue_releen_status():
     else:
         print("%s: Yhteys on poikki! " % aika)
         client.disconnect()
-        time.sleep(10)
         restart_and_reconnect()
         return False
 
@@ -170,14 +167,13 @@ def lue_lampo_ja_yhdista():
     else:
         print("%s: Yhteys on poikki!" % aika)
         client.disconnect()
-        time.sleep(10)
         restart_and_reconnect()
         return False
 
 
 def restart_and_reconnect():
     aika = ratkaise_aika()
-    print('%s: Ongelmia. Boottaillaan.' % aika)
+    print('%s: Ongelmia. Boottaillaan 5s kuluttua.' % aika)
     vilkuta_ledi(10)
     time.sleep(5)
     machine.reset()
@@ -229,15 +225,16 @@ except OSError as e:
     print("%s: Ei onnistunut yhteys mqtt-palvelimeen %s" % (aika, MQTT_SERVERI))
     restart_and_reconnect()
 
-while True:
-    kulunut_anturi_aika = (time.time() - anturi_looppi_aika)
-    kulunut_rele_aika = (time.time() - rele_looppi_aika)
-    if (RELE_LUKUVALI <= ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI):
-        releluuppi()
-    if (RELE_LUKUVALI > ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI):
-        releluuppi()
-    if (ANTURI_LUKUVALI <= RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI):
-        anturiluuppi()
-    if (ANTURI_LUKUVALI > RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI):
-        anturiluuppi()
-    pass
+try:
+    while True:
+        kulunut_anturi_aika = (time.time() - anturi_looppi_aika)
+        kulunut_rele_aika = (time.time() - rele_looppi_aika)
+        if (RELE_LUKUVALI <= ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI): releluuppi()
+        if (RELE_LUKUVALI > ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI): releluuppi()
+        if (ANTURI_LUKUVALI <= RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI): anturiluuppi()
+        if (ANTURI_LUKUVALI > RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI): anturiluuppi()
+        pass
+except KeyboardInterrupt:
+    raise
+except Exception:
+    restart_and_reconnect()
