@@ -6,7 +6,6 @@ import network
 from ntptime import settime
 import esp
 import webrepl #webbihallinta - asenna komennolla import webrepl_setup
-webrepl.start()
 esp.osdebug(None)
 #roskankeruuproseduuri
 import gc
@@ -14,8 +13,6 @@ gc.collect()
 from time import sleep
 # Parametrit tuodaan parametrit.py-tiedostosta
 from parametrit import SSID1, SSID2,SALASANA1,SALASANA2
-#yhdistetty tieto
-
 wificlient_if = network.WLAN(network.STA_IF)
 wificlient_if.active(False)
 
@@ -37,12 +34,16 @@ def yhdista_wifi(ssid_nimi, salasana):
         except:
             print("NTP-palvelimelta pool.ntp.org ei saatu aikaa!")
             ei_voida_yhdistaa()
+        try:
+            webrepl.start() # kaynnistetaan WebREPL
+        except:
+            print("WebREPL ei kaynnisty")
     return True
 
 def ei_voida_yhdistaa():
-  print("Yhteys ei onnistu. Bootataan 10 s. kuluttua")
+  print("Yhteys ei onnistu. Bootataan 5 s. kuluttua")
   vilkuta_ledi(10)
-  sleep(10)
+  sleep(5)
   machine.reset()
 
 def vilkuta_ledi(kertaa):
