@@ -227,13 +227,14 @@ except OSError as e:
 
 try:
     while True:
+        if (relevirhe >= 5) or (anturivirhe >= 5): restart_and_reconnect() # liikaa virheita
         kulunut_anturi_aika = (time.time() - anturi_looppi_aika)
         kulunut_rele_aika = (time.time() - rele_looppi_aika)
         if (RELE_LUKUVALI <= ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI): releluuppi()
         if (RELE_LUKUVALI > ANTURI_LUKUVALI) and (kulunut_rele_aika >= RELE_LUKUVALI): releluuppi()
         if (ANTURI_LUKUVALI <= RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI): anturiluuppi()
         if (ANTURI_LUKUVALI > RELE_LUKUVALI) and (kulunut_anturi_aika >= ANTURI_LUKUVALI): anturiluuppi()
-        pass
+
 except KeyboardInterrupt:
     raise
 except Exception:
