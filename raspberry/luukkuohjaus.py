@@ -8,6 +8,7 @@
 
 import paho.mqtt.client as mqtt #mqtt kirjasto
 import subprocess # shell-komentoja varten
+import time # hidastusta varten muuten CPU 25 %
 aiempiviesti = None  # aiempi tilaviesti
 
 def mqttyhdista(mqttasiakas, userdata, flags, rc):
@@ -60,5 +61,6 @@ mqttasiakas.subscribe(MQTTAIHE) # tilaa aihe
 kaynnissa = True
 while True:
     mqttasiakas.loop_start()
+    time.sleep(0.01) # hidastetaan hieman jotta CPU ei ole 25 %
     # mqttasiakas.loop_forever()
 
