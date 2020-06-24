@@ -14,7 +14,7 @@
 # sudo apt-get install python-serial
 # testailla voit suoraan asentamalla sudo apt-get install minicom
 # minicom -D /dev/ttyS0 ja siella ctrl + a, z, p, c =9600 
-# RDM6300 kytketty nasta 1 (txd) Raspi GPIO15 (pinni 10, rxd) ja nasta 2 (rxd) raspin GPIO15 (pinni 8, txd)
+# RDM6300 kytketty nasta 1 (txd) Raspi GPIO15 (pinni 10, rxd) ja nasta 2 (rxd) raspin GPIO14 (pinni 8, txd)
 # RDM6300 ja Raspin valilla tasomuunnin 3,3V -> 5V (voi tehda vastuksilla)
 import time
 import serial 
@@ -58,5 +58,5 @@ while True:
 
 #    finally:
 #        print("puhdista portit") 
-#        GPIO.cleanup() # cleanup all GPIO 
+#        GPIO.cleanup() # kaikkien GPIO nollaus 
         
