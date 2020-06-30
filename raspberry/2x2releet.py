@@ -140,7 +140,7 @@ MQTTAIHE_3 = 'kanala/ulko/valaistus' # aihe josta ulkovalon status luetaan
 MQTTAIHE_4 = 'kanala/ulko/halytys' # aihe josta halytys status luetaan
 
 # mqtt-objektin luominen
-mqttasiakas = mqtt.Client("luukku-broker") #mqtt objektin luominen
+mqttasiakas = mqtt.Client("2x2rele-broker") #mqtt objektin luominen, jokainen piaa olla uniikki
 mqttasiakas.on_connect = mqttyhdista # mita tehdaan kun yhdistetaan brokeriin
 mqttasiakas.on_message = mqttviesti # maarita mita tehdaan kun viesti saapuu
 mqttasiakas.username_pw_set("useri","salari") #mqtt useri ja salarittanturi.connect("localhost", port=1883, keepalive=60) #Yhteys brokeriin (sama laite)
