@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 # Relemoduleiden ohjaus
 # NC = Normally Connected
 # NO = Normally Open
-
+# 1.7.2020 Jari Hiltunen
 
 import paho.mqtt.client as mqtt # mqtt kirjasto
 import RPi.GPIO as GPIO
@@ -17,7 +18,6 @@ GPIO.setup(rele2_pinni, GPIO.OUT)
 GPIO.setup(rele3_pinni, GPIO.OUT)
 GPIO.setup(rele4_pinni, GPIO.OUT)
 # Releiden logiikat
-# Relemoduleiden ohjaus
 # 0 = NC = Normally Closed
 # 1 = NO = Normally Open
 # Tilastatusta varten
@@ -51,7 +51,6 @@ def mqttviesti(mqttasiakas, userdata, message):
             GPIO.output(rele1_pinni, 0)
             aiempi_rele1_viesti = 0
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -61,7 +60,6 @@ def mqttviesti(mqttasiakas, userdata, message):
             GPIO.output(rele1_pinni, 1)
             aiempi_rele1_viesti = 1
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -72,7 +70,6 @@ def mqttviesti(mqttasiakas, userdata, message):
             GPIO.output(rele2_pinni, 0)
             aiempi_rele2_viesti = 0
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -82,7 +79,6 @@ def mqttviesti(mqttasiakas, userdata, message):
             GPIO.output(rele2_pinni, 1)
             aiempi_rele2_viesti = 1
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -91,9 +87,8 @@ def mqttviesti(mqttasiakas, userdata, message):
     if (message.topic == MQTTAIHE_3) and (viesti == 0) and (viesti != aiempi_rele3_viesti):
         try:
             GPIO.output(rele3_pinni, 0)
-            aiempi_rele1_viesti = 0
+            aiempi_rele3_viesti = 0
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -103,7 +98,6 @@ def mqttviesti(mqttasiakas, userdata, message):
             GPIO.output(rele3_pinni, 1)
             aiempi_rele3_viesti = 1
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -114,7 +108,6 @@ def mqttviesti(mqttasiakas, userdata, message):
             GPIO.output(rele4_pinni, 0)
             aiempi_rele4_viesti = 0
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -124,7 +117,6 @@ def mqttviesti(mqttasiakas, userdata, message):
             GPIO.output(rele4_pinni, 1)
             aiempi_rele4_viesti = 1
             time.sleep(1)
-            return True
         except OSError:
             print("Virhe %d" %OSError)
             GPIO.cleanup()
@@ -140,11 +132,11 @@ MQTTAIHE_3 = 'kanala/ulko/valaistus' # aihe josta ulkovalon status luetaan
 MQTTAIHE_4 = 'kanala/ulko/halytys' # aihe josta halytys status luetaan
 
 # mqtt-objektin luominen
-mqttasiakas = mqtt.Client("2x2rele-broker") #mqtt objektin luominen, jokainen piaa olla uniikki
+mqttasiakas = mqtt.Client("2x2rele-broker") # mqtt objektin luominen
 mqttasiakas.on_connect = mqttyhdista # mita tehdaan kun yhdistetaan brokeriin
 mqttasiakas.on_message = mqttviesti # maarita mita tehdaan kun viesti saapuu
-mqttasiakas.username_pw_set("useri","salari") #mqtt useri ja salarittanturi.connect("localhost", port=1883, keepalive=60) #Yhteys brokeriin (sama laite)
-mqttasiakas.connect(broker, port, keepalive=60, bind_address="") #yhdista mqtt-brokeriin
+mqttasiakas.username_pw_set("useri","salari") # mqtt useri ja salari
+mqttasiakas.connect(broker, port, keepalive=60, bind_address="") # yhdista mqtt-brokeriin
 
 try:
     while True:
