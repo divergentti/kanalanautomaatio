@@ -212,7 +212,7 @@ def palauta_PPM():
     humidity = float(kosteus)
     mq135 = MQ135(Pin(MQ135_PINNI))  # objektin luonti, analogi PIN 0 ESP32 ADC0
     ppm_lista = []  # keskiarvon laskentaa varten
-    print("Luetaan 60 arvoa listalle kerran sekunnissa ... odota")
+    print("Luetaan ensimmaiset 60 arvoa listalle kerran sekunnissa ... odota")
     # looppi
     while True:
         try:
@@ -237,12 +237,14 @@ def palauta_PPM():
             # julkaistaan keskiarvo mqtt
             laheta_ppm_mqtt(keskiarvo)
             # luetaan uusi lampotila ja kosteusarvo
-            client.check_msg()  # kosteus
+            client.check_msg() # tarkisetaan uusia arvoja
+            client.check_msg()  # tarkisetaan uusia arvoja
             print ("Uusi lampo %s ja kosteus %s" %(lampo, kosteus))
             temperature = float(lampo)
             humidity = float(kosteus)
             vilkuta_ledi(2)
             ppm_lista.clear() # nollataan lista
+            print ("Luetaan seuraavat 60 arvoa listalle... odota")
         time.sleep(1)  # lukuvali 1s.
 
 if __name__ == "__main__":
