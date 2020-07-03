@@ -33,8 +33,8 @@ from parametrit import CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, \
 
 client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
-lampo = 0  # oletukset
-kosteus = 0  # oletukset
+lampo = 0
+kosteus = 0
 
 class MQ135(object):
     """
@@ -137,6 +137,7 @@ def mqtt_palvelin_yhdista():
             client.connect()
             client.subscribe(SISA_LAMPO)  # lampotila C
             client.subscribe(SISA_KOSTEUS)  # suhteellinen kosteus %
+
         except OSError as e:
             print("% s:  Ei voida yhdistaa! " % aika)
             client.disconnect()
@@ -152,11 +153,12 @@ def mqtt_palvelin_yhdista():
 
 def palauta_lampo_ja_rh(topic, msg):
     global lampo, kosteus
+
     if topic == SISA_LAMPO:
         lampo = msg  # uusi lampotila
     if topic == SISA_KOSTEUS:
         kosteus = msg  # uusi kosteus
-    return
+    return lampo, kosteus
 
 def laheta_ppm_mqtt(ppm):
     aika = ratkaise_aika()
@@ -197,22 +199,30 @@ def restart_and_reconnect():
 
 def palauta_PPM():
     global lampo, kosteus
+    aika = ratkaise_aika()
     """Lukee viimeisimmän temp- ja Rh arvot mtqq:lta ja luo mq135-sensoriobjektin"""
     # setup
     mqtt_palvelin_yhdista()   # lampo ja kosteus pitaisi olla muuttunut oletuksesta
-    print("Odotellaan ensimmaista arvoa mqtt:lle...")
+    print("%s Odotellaan ensimmaista arvoa mqtt:lle..." %aika)
     client.wait_msg()
-    if (lampo == 0) or (kosteus == 0):
+    if (lampo == 0):
         client.wait_msg()  # kokeile lukua uudelleen
-        if (lampo == 0) or (kosteus == 0):
-            print("Ei onnistu. Lampo %s, kosteus %s" %(lampo, kosteus))
+        if (lampo == 0):
+            print("Ei onnistu. Lampo %s" %(lampo))
+            raise OSError
+    client.wait_msg()
+    if (kosteus == 0):
+        client.wait_msg()  # kokeile lukua uudelleen
+        if (kosteus == 0):
+            print("Ei onnistu. Lampo %s" %(lampo))
             raise OSError
     print ("Lampo %s, kosteus %s" %(lampo, kosteus))
     temperature = float(lampo)
     humidity = float(kosteus)
     mq135 = MQ135(Pin(MQ135_PINNI))  # objektin luonti, analogi PIN 0 ESP32 ADC0
     ppm_lista = []  # keskiarvon laskentaa varten
-    print("Luetaan ensimmaiset 60 arvoa listalle kerran sekunnissa ... odota")
+    aika = ratkaise_aika()
+    print("%s Luetaan ensimmaiset 60 arvoa listalle kerran sekunnissa ... odota" %aika)
     # looppi
     while True:
         try:
@@ -229,16 +239,16 @@ def palauta_PPM():
         #        "\t Resistance: " + str(resistance) + "\t PPM: " + str(ppm) +
         #        "\t Corrected PPM: " + str(corrected_ppm) + "ppm")
 
-
         if len(ppm_lista) == 60:
             # lasketaan minuutin keskiarvo PPM:lle
             keskiarvo = sum(ppm_lista) / len(ppm_lista)
             print("Tallennettava keskiarvo on: %s " %keskiarvo)
             # julkaistaan keskiarvo mqtt
             laheta_ppm_mqtt(keskiarvo)
-            # luetaan uusi lampotila ja kosteusarvo
-            client.check_msg() # tarkisetaan uusia arvoja
-            client.check_msg()  # tarkisetaan uusia arvoja
+            aika = ratkaise_aika()
+            print("%s Tarkisteteaan onko uusi lampotila ja kosteus..." %aika)
+            client.check_msg()  # tarkistetaan onko uusia arvoja
+            client.check_msg()  # tarkistetaan onko uusia arvoja
             print ("Uusi lampo %s ja kosteus %s" %(lampo, kosteus))
             temperature = float(lampo)
             humidity = float(kosteus)
