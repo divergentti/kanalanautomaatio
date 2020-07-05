@@ -1,148 +1,108 @@
 #!/usr/bin/env python3
-# Relemoduleiden ohjaus
-# NC = Normally Connected
-# NO = Normally Open
-# 1.7.2020 Jari Hiltunen
+"""
+Relemoduleiden ohjaus scripti. Scripti lukee relepinnien mukaisia GPIO-portteja
+ja sen mukaisesti ohjaa releen paalle tai pois. Huomioi releiden kytkennat, eli:
+ NC = Normally Connected
+ NO = Normally Open
+jolloin arvo 1 voi olla siis joko rele auki tai kiinni kytkennasta riippuen.
+
+Ohjelmakoodissa arvo 0 tarkoittaa sita, etta releelle tuodaan jannite.
+
+5.7.2020 Jari Hiltunen
+"""
 
 import paho.mqtt.client as mqtt # mqtt kirjasto
 import RPi.GPIO as GPIO
 import time
-rele1_pinni = 26
-rele2_pinni = 19
-rele3_pinni = 13
-rele4_pinni = 6
-GPIO.setmode(GPIO.BCM)
-# Releiden pinnit
-GPIO.setup(rele1_pinni, GPIO.OUT)
-GPIO.setup(rele2_pinni, GPIO.OUT)
-GPIO.setup(rele3_pinni, GPIO.OUT)
-GPIO.setup(rele4_pinni, GPIO.OUT)
-# Releiden logiikat
-# 0 = NC = Normally Closed
-# 1 = NO = Normally Open
-# Tilastatusta varten
-aiempi_rele1_viesti = None  # aiempi tilaviesti
-aiempi_rele2_viesti = None  # aiempi tilaviesti
-aiempi_rele3_viesti = None  # aiempi tilaviesti
-aiempi_rele4_viesti = None  # aiempi tilaviesti
-# Aihe1 = rele1 jne.
+import syslog  # Syslogiin kirjoittamista varten
+from parametrit import RELE1_PINNI, RELE2_PINNI, RELE3_PINNI, RELE4_PINNI, \
+    RELE1_MQTTAIHE_1, RELE2_MQTTAIHE_2, RELE3_MQTTAIHE_3, RELE4_MQTTAIHE_4, \
+    MQTTSERVERIPORTTI, MQTTSERVERI, MQTTKAYTTAJA, MQTTSALARI
+
 
 def mqttyhdista(mqttasiakas, userdata, flags, rc):
     # print("Yhdistetty " + str(rc))
-    # Yhdistetaan brokeriin ja tilataan aiheet
-    mqttasiakas.subscribe(MQTTAIHE_1)  # tilaa aihe releelle 1
-    mqttasiakas.subscribe(MQTTAIHE_2)  # tilaa aihe releelle 2
-    mqttasiakas.subscribe(MQTTAIHE_3)  # tilaa aihe releelle 3
-    mqttasiakas.subscribe(MQTTAIHE_4)  # tilaa aihe releelle 4
-
+    """ Yhdistetaan mqtt-brokeriin ja tilataan aiheet """
+    mqttasiakas.subscribe(RELE1_MQTTAIHE_1)  # tilaa aihe releelle 1
+    mqttasiakas.subscribe(RELE2_MQTTAIHE_2)  # tilaa aihe releelle 2
+    mqttasiakas.subscribe(RELE3_MQTTAIHE_3)  # tilaa aihe releelle 3
+    mqttasiakas.subscribe(RELE4_MQTTAIHE_4)  # tilaa aihe releelle 4
+    return
 
 def mqttviesti(mqttasiakas, userdata, message):
-    global aiempi_rele1_viesti, aiempi_rele2_viesti, \
-        aiempi_rele3_viesti, aiempi_rele4_viesti # ei toteuteta jos ei muutosta
-    # Looppia voi lyhentaa laskurin avulla esim. MQTTAIHE_x jossa x on laskuri
-    # jos releiden logiikka on sama.
+    """ Looppia suoritetaan aina kun aiheeseen julkaistaan viesti
+    Muista laittaa mqtt-julkaisuun Retained = True, muutoin rele vain
+    kay kerran paalla ja nollautuu!
+    """
     viesti = int(message.payload)
     if (viesti < 0) or (viesti > 1):
         print("Virheellinen arvo!")
+        syslog.syslog("Virheellinen arvo kutsussa!")
         return False
-    # releelle ja aiheelle 1
-    if (message.topic == MQTTAIHE_1) and (viesti == 0) and (viesti != aiempi_rele1_viesti):
+    """ Releelle ja aiheelle 1 """
+    if (message.topic == RELE1_MQTTAIHE_1):
         try:
-            GPIO.output(rele1_pinni, 0)
-            aiempi_rele1_viesti = 0
-            time.sleep(1)
+            GPIO.output(RELE1_PINNI, viesti)
         except OSError:
             print("Virhe %d" %OSError)
+            syslog.syslog("Rele 1 %s" % OSError)
             GPIO.cleanup()
             return False
-    if (message.topic == MQTTAIHE_1) and (viesti == 1) and (viesti != aiempi_rele1_viesti):
+    """ Releelle ja aiheelle 2 """
+    if (message.topic == RELE2_MQTTAIHE_2):
         try:
-            GPIO.output(rele1_pinni, 1)
-            aiempi_rele1_viesti = 1
-            time.sleep(1)
+            GPIO.output(RELE2_PINNI, viesti)
         except OSError:
             print("Virhe %d" %OSError)
+            syslog.syslog("Rele 2 %s" % OSError)
             GPIO.cleanup()
             return False
-    # releelle ja aiheelle 2
-    if (message.topic == MQTTAIHE_2) and (viesti == 0) and (viesti != aiempi_rele2_viesti):
+    """ Releelle ja aiheelle 3 """
+    if (message.topic == RELE3_MQTTAIHE_3):
         try:
-            GPIO.output(rele2_pinni, 0)
-            aiempi_rele2_viesti = 0
-            time.sleep(1)
+            GPIO.output(RELE3_PINNI, viesti)
         except OSError:
             print("Virhe %d" %OSError)
+            syslog.syslog("Rele 3 %s" % OSError)
             GPIO.cleanup()
             return False
-    if (message.topic == MQTTAIHE_2) and (viesti == 1) and (viesti != aiempi_rele2_viesti):
+    """ Releelle ja aiheelle 4 """
+    if (message.topic == RELE4_MQTTAIHE_4):
         try:
-            GPIO.output(rele2_pinni, 1)
-            aiempi_rele2_viesti = 1
-            time.sleep(1)
+            GPIO.output(RELE4_PINNI, viesti)
         except OSError:
             print("Virhe %d" %OSError)
-            GPIO.cleanup()
-            return False
-    # releelle ja aiheelle 3
-    if (message.topic == MQTTAIHE_3) and (viesti == 0) and (viesti != aiempi_rele3_viesti):
-        try:
-            GPIO.output(rele3_pinni, 0)
-            aiempi_rele3_viesti = 0
-            time.sleep(1)
-        except OSError:
-            print("Virhe %d" %OSError)
-            GPIO.cleanup()
-            return False
-    if (message.topic == MQTTAIHE_3) and (viesti == 1) and (viesti != aiempi_rele3_viesti):
-        try:
-            GPIO.output(rele3_pinni, 1)
-            aiempi_rele3_viesti = 1
-            time.sleep(1)
-        except OSError:
-            print("Virhe %d" %OSError)
-            GPIO.cleanup()
-            return False
-    # releelle ja aiheelle 4
-    if (message.topic == MQTTAIHE_4) and (viesti == 0) and (viesti != aiempi_rele4_viesti):
-        try:
-            GPIO.output(rele4_pinni, 0)
-            aiempi_rele4_viesti = 0
-            time.sleep(1)
-        except OSError:
-            print("Virhe %d" %OSError)
-            GPIO.cleanup()
-            return False
-    if (message.topic == MQTTAIHE_4) and (viesti == 1) and (viesti != aiempi_rele4_viesti):
-        try:
-            GPIO.output(rele4_pinni, 1)
-            aiempi_rele4_viesti = 1
-            time.sleep(1)
-        except OSError:
-            print("Virhe %d" %OSError)
+            syslog.syslog("Rele 4 %s" % OSError)
             GPIO.cleanup()
             return False
     return  # mqttviesti
 
-broker = "localhost" #brokerin osoite
-port = 1883 #portti
-# reileille tilattavat mtqq-aiheet
-MQTTAIHE_1 = 'kanala/sisa/valaistus' # aihe josta valon status luetaan
-MQTTAIHE_2 = 'kanala/sisa/lammitys' # aihe josta lammityksen status luetaan
-MQTTAIHE_3 = 'kanala/ulko/valaistus' # aihe josta ulkovalon status luetaan
-MQTTAIHE_4 = 'kanala/ulko/halytys' # aihe josta halytys status luetaan
 
-# mqtt-objektin luominen
-mqttasiakas = mqtt.Client("2x2rele-broker") # mqtt objektin luominen
-mqttasiakas.on_connect = mqttyhdista # mita tehdaan kun yhdistetaan brokeriin
-mqttasiakas.on_message = mqttviesti # maarita mita tehdaan kun viesti saapuu
-mqttasiakas.username_pw_set("useri","salari") # mqtt useri ja salari
-mqttasiakas.connect(broker, port, keepalive=60, bind_address="") # yhdista mqtt-brokeriin
+def relepaaluuppi():
+    GPIO.setmode(GPIO.BCM)
+    """  Releiden pinnien GPIO- alkuasetus, oletus alustus 0 """
+    GPIO.setup(RELE1_PINNI, GPIO.OUT, initial=0)
+    GPIO.setup(RELE2_PINNI, GPIO.OUT, initial=0)
+    GPIO.setup(RELE3_PINNI, GPIO.OUT, initial=0)
+    GPIO.setup(RELE4_PINNI, GPIO.OUT, initial=0)
+    """ mqtt-objektin luominen """
+    """ Tassa kaytetaan salaamatonta porttia ilman TLS:aa, vaihda tarvittaessa """
+    broker = MQTTSERVERI  # brokerin osoite
+    port = MQTTSERVERIPORTTI
+    mqttasiakas = mqtt.Client("2x2rele-broker")  # mqtt objektin luominen, tulla olla uniikki nimi
+    mqttasiakas.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
+    mqttasiakas.connect(broker, port, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
+    mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
+    mqttasiakas.on_message = mqttviesti  # maarita mita tehdaan kun viesti saapuu
+    """ Suoritetaan looppia kunnes toiminta katkaistaan"""
+    try:
+        while True:
+            mqttasiakas.loop_forever()
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        syslog.syslog("2x2-relescripti katkaistu kasin")
+        GPIO.cleanup()
+        pass
 
-try:
-    while True:
-        mqttasiakas.loop_start()
-        time.sleep(1)
-
-except KeyboardInterrupt:
-    GPIO.cleanup()
-    pass
+if __name__ == "__main__":
+    relepaaluuppi()
