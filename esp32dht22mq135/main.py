@@ -276,10 +276,10 @@ def palauta_PPM():
         # lasketaan minuutin keskiarvo PPM:lle
         if len(ppm_lista) == 60:
             keskiarvo = sum(ppm_lista) / len(ppm_lista)
-            print("Tallennettava keskiarvo on: %s " %keskiarvo)
+            print("Tallennettava keskiarvo on: %s ppm" %keskiarvo)
             """ Tarkistetaan onko looppi toiminut yli vuorokauden, jolloin anturi on kalibroitunut
                 ja tämän jälkeen arvioidaan ilmanlaatua """
-            print("Looppi toiminnassa %s" % (utime.time()-loopin_alkuaika))
+            print("Looppi toiminnassa %s sekuntia" % (utime.time()-loopin_alkuaika))
             if utime.time()-loopin_alkuaika > 86400:
                 if keskiarvo > 800 and keskiarvo < 2000:
                     print ("Ilma tunkkainen! Odota ja seuraa tilannetta.")
