@@ -162,7 +162,6 @@ def mqtt_palvelin_yhdista():
 
         except OSError as e:
             print("% s:  Ei voida yhdistaa! " % aika)
-            client.disconnect()
             time.sleep(10)
             restart_and_reconnect()
             return False
@@ -227,7 +226,6 @@ def laheta_ppm_mqtt(ppm):
             client.publish(SISA_PPM, str(ppm))  # julkaistaan ppm arvo
         except OSError as e:
             print("% s:  Ei voida yhdistaa! " % aika)
-            client.disconnect()
             time.sleep(10)
             restart_and_reconnect()
             return False
