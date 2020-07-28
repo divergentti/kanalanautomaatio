@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
- 27.7.2020 Jari Hiltunen
+ 28.7.2020 Jari Hiltunen
  Scripti kuuntelee mqtt-viestiä siitä laitetaanko luukku pois tai päälle
  tämän jälkeen lähetetään ennakolta tutkittu kaukosaatimen koodi vastaanottimeen.
  Malli KZ005-2 DC 9-30V Wireless Remote Control Kits Linear Actuator Motor Controller:
