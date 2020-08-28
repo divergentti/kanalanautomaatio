@@ -72,10 +72,8 @@ def mqtt_palvelin_yhdista():
             client.set_callback(viestin_saapuessa)
             client.connect()
             client.subscribe(AIHE_LIIKETUNNISTIN)
-
         except OSError as e:
             print("% s:  Ei voida yhdistaa! " % aika)
-            time.sleep(10)
             restart_and_reconnect()
             return False
         return True
@@ -89,22 +87,18 @@ def viestin_saapuessa():
     vilkuta_ledi(1)
     return
 
-
 def laheta_pir(status):
     aika = ratkaise_aika()
     if sta_if.isconnected():
         try:
-            client.connect()
             client.publish(AIHE_LIIKETUNNISTIN, str(status))  # 1 = liiketta, 0 = liike loppunut
         except OSError as e:
             print("% s:  Ei voida yhdistaa! " % aika)
-            time.sleep(10)
             restart_and_reconnect()
             return False
         return True
     else:
         print("%s: Yhteys on poikki! " % aika)
-        # client.disconnect()
         restart_and_reconnect()
         return False
 
@@ -116,6 +110,7 @@ def vilkuta_ledi(kertaa):
         utime.sleep_ms(100)
         ledipinni.off()
         utime.sleep_ms(100)
+    return
 
 def restart_and_reconnect():
     aika = ratkaise_aika()
@@ -125,10 +120,12 @@ def restart_and_reconnect():
     machine.reset()
     # resetoidaan
 
-
-def seuraa_liiketta():
+def alustus():
     # alustus
     mqtt_palvelin_yhdista()
+
+def seuraa_liiketta():
+    alustus()
     # aikaero asetetaan samaksi
     on_aika = utime.time()
     off_aika = on_aika
@@ -142,16 +139,16 @@ def seuraa_liiketta():
             laheta_pir(1)
             vilkuta_ledi(10)
             ilmoitettu = True
-        if pir_tila == 0 and ilmoitettu == True:
+        if pir_tila == 0:
             off_aika = utime.time()
             aikaero = off_aika - on_aika
-            if aikaero >= PIR_LIIKE_NOLLAUSAIKA:
+            if aikaero >= PIR_LIIKE_NOLLAUSAIKA and ilmoitettu == True:
                 # liike loppunut
                 laheta_pir(0)
                 print('Liike loppunut, liike kesti %s sekuntia' % aikaero)
                 ilmoitettu = False
         # lasketaan prosessorin kuormaa
-        time.sleep(0.1)
+        time.sleep(0.01)
 
 if __name__ == "__main__":
     seuraa_liiketta()
