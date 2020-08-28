@@ -6,7 +6,21 @@
     Luetaan liiketunnistimelta tulevaa statustietoa, joko pinni päällä tai pois.
     Mikäli havaitaan liikettä, havaitaan keskeytys ja tämä tieto välitetään mqtt-brokerille.
 
-    MQTT-brokerissa voi olla esimerkiksi ledinauhoja ohjaavat laitteet tai muut toimet, joita
+    Sensori näkee 110 astetta, 7 metriin, kuluttaa 65mA virtaa ja toimii 4.5V - 20V jännitteellä.
+
+    Keskimmäinen potentiometri säätää herkkyyttä, laitimmainen aikaa (0-300s) miten pitkään datapinnissä pysyy
+    tila high päällä liikkeen havaitsemisen jälkeen. Blokkausaika on 2.5s eli sitä tiheämmin ei havaita muutosta.
+
+    Jumpperi: alareunassa single triggeri, eli liikkeestä lähetetään vain yksi high-tila (3,3V). Eli
+    jos ihminen liikkuu tilassa, high pysyy ylhäällä potentiometrillä säädetyn ajan verran ja palautuu
+    nollaan. Yläreunassa repeat triggeri, eli lähetetään high-tilaa (3,3V) niin pitkään kun joku on tilassa.
+
+    Käytä tämän scriptin kanssa repeat-tilaa ja säädä aika minimiin (laitimmainen potentionmetri äärivasen)!
+
+    Kytkentä: keskimmäinen on datapinni (high/low), jumpperin puolella maa (gnd) ja +5V toisella puolella.
+    Ota jännite ESP32:n 5V lähdöstä (VIN, alin vasemmalla päältä katsottuna antaa  4.75V).
+
+        MQTT-brokerissa voi olla esimerkiksi ledinauhoja ohjaavat laitteet tai muut toimet, joita
     liiketunnistuksesta tulee aktivoida. Voit liittää tähän scriptiin myös releiden ohjauksen,
     jos ESP32 ohjaa samalla myös releitä.
 
@@ -16,7 +30,6 @@
 
 """
 import time
-from time import sleep
 import utime
 import machine # tuodaan koko kirjasto
 from machine import Pin
@@ -30,15 +43,12 @@ gc.enable()  # aktivoidaan automaattinen roskankeruu
 machine.freq(80000000)
 print ("Prosessorin nopeus asetettu: %s" %machine.freq())
 
-# globaalit
-liike = False
-
 # Raspberry WiFi on huono ja lisaksi raspin pitaa pingata ESP32 jotta yhteys toimii!
 sta_if = network.WLAN(network.STA_IF)
 
 # tuodaan parametrit tiedostosta parametrit.py
 from parametrit import CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, \
-    MQTT_SALASANA, PIR_PINNI, PIR_LIIKE_LOPPUAIKA, AIHE_LIIKETUNNISTIN
+    MQTT_SALASANA, PIR_PINNI, PIR_LIIKE_NOLLAUSAIKA, AIHE_LIIKETUNNISTIN
 
 client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
@@ -59,7 +69,7 @@ def mqtt_palvelin_yhdista():
     aika = ratkaise_aika()
     if sta_if.isconnected():
         try:
-            client.set_callback(seuraa_liiketta)
+            client.set_callback(viestin_saapuessa)
             client.connect()
             client.subscribe(AIHE_LIIKETUNNISTIN)
 
@@ -73,6 +83,12 @@ def mqtt_palvelin_yhdista():
         print("%s: Yhteys on poikki! " % aika)
         restart_and_reconnect()
         return False
+
+def viestin_saapuessa():
+    ''' Tämä on turha, mutta voisi käyttää tilanteessa jossa mqtt-viesti saapuu'''
+    vilkuta_ledi(1)
+    return
+
 
 def laheta_pir(status):
     aika = ratkaise_aika()
@@ -110,33 +126,32 @@ def restart_and_reconnect():
     # resetoidaan
 
 
-def keskeytyksen_seuranta(pin):
-  global liike
-  liike = True
-  global keskeytys_pin
-  keskeytys_pin = pin
-
-
 def seuraa_liiketta():
-    global liike
     # alustus
-    pir.irq(trigger=Pin.IRQ_RISING, handler=keskeytyksen_seuranta)
     mqtt_palvelin_yhdista()
+    # aikaero asetetaan samaksi
+    on_aika = utime.time()
+    off_aika = on_aika
+    ilmoitettu = False
     while True:
-        if liike:
-            aika = ratkaise_aika()
-            print('%s Liiketta havaittu! Keskeytysosoite: %s' %(aika, keskeytys_pin))
-            # arvo 1 tarkoittaa liiketta
+        pir_tila = pir.value()
+        if pir_tila == 1 and ilmoitettu == False:
+            on_aika = utime.time()
+            print('Liiketta havaittu! Sekunnit: %s' %on_aika)
+            # arvo 1 tarkoittaa liiketta, ilmoitetaan mqtt-sanomana
             laheta_pir(1)
             vilkuta_ledi(10)
-            # odotetaan
-            sleep(PIR_LIIKE_LOPPUAIKA)
-            aika = ratkaise_aika()
-            print('%s Liike loppunut!' %aika)
-            # arvo 0 tarkoittaa liike loppunut
-            laheta_pir(0)
-            vilkuta_ledi(1)
-            liike = False
+            ilmoitettu = True
+        if pir_tila == 0 and ilmoitettu == True:
+            off_aika = utime.time()
+            aikaero = off_aika - on_aika
+            if aikaero >= PIR_LIIKE_NOLLAUSAIKA:
+                # liike loppunut
+                laheta_pir(0)
+                print('Liike loppunut, liike kesti %s sekuntia' % aikaero)
+                ilmoitettu = False
+        # lasketaan prosessorin kuormaa
+        time.sleep(0.1)
 
 if __name__ == "__main__":
     seuraa_liiketta()
