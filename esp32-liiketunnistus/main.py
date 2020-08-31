@@ -1,6 +1,6 @@
 """ ESP32-Wroom-NodeMCU ja vastaaville (micropython)
 
-    27.8.2020: Jari Hiltunen
+    31.8.2020: Jari Hiltunen
 
     PIR HC-SR501-sensorille:
     Luetaan liiketunnistimelta tulevaa statustietoa, joko pinni päällä tai pois.
@@ -48,7 +48,7 @@ sta_if = network.WLAN(network.STA_IF)
 
 # tuodaan parametrit tiedostosta parametrit.py
 from parametrit import CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, \
-    MQTT_SALASANA, PIR_PINNI, PIR_LIIKE_NOLLAUSAIKA, AIHE_LIIKETUNNISTIN
+    MQTT_SALASANA, PIR_PINNI, AIHE_LIIKETUNNISTIN
 
 client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 
@@ -126,27 +126,28 @@ def alustus():
 
 def seuraa_liiketta():
     alustus()
-    # aikaero asetetaan samaksi
     on_aika = utime.time()
-    off_aika = on_aika
-    ilmoitettu = False
+    off_aika = utime.time()
+    ilmoitettu_on = False
+    ilmoitettu_off = False
+
     while True:
         pir_tila = pir.value()
-        if pir_tila == 1 and ilmoitettu == False:
-            on_aika = utime.time()
-            print('Liiketta havaittu! Sekunnit: %s' %on_aika)
-            # arvo 1 tarkoittaa liiketta, ilmoitetaan mqtt-sanomana
-            laheta_pir(1)
-            vilkuta_ledi(10)
-            ilmoitettu = True
-        if pir_tila == 0:
+        if (pir_tila == 0) and (ilmoitettu_off == False):
+            ''' Nollataan ilmoitus'''
             off_aika = utime.time()
-            aikaero = off_aika - on_aika
-            if aikaero >= PIR_LIIKE_NOLLAUSAIKA and ilmoitettu == True:
-                # liike loppunut
-                laheta_pir(0)
-                print('Liike loppunut, liike kesti %s sekuntia' % aikaero)
-                ilmoitettu = False
+            print("Ilmoitettu liikkeen lopusta. Liike kesti %s" %(off_aika - on_aika))
+            laheta_pir(0)
+            ilmoitettu_off = True
+            ilmoitettu_on = False
+        elif (pir_tila == 1) and (ilmoitettu_on == False):
+            ''' Liikettä havaittu !'''
+            on_aika = utime.time()
+            print("Ilmoitetaan liikkeesta!")
+            laheta_pir(1)
+            ilmoitettu_on = True
+            ilmoitettu_off = False
+
         # lasketaan prosessorin kuormaa
         time.sleep(0.01)
 
