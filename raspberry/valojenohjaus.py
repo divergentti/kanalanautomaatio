@@ -43,6 +43,7 @@ def mqttyhdista(mqttasiakas, userdata, flags, rc):
     mqttasiakas.subscribe(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2)  # tilaa aihe releelle 2
     
 def alusta():
+    global mqttasiakas
     broker = MQTTSERVERI  # brokerin osoite
     port = MQTTSERVERIPORTTI
     mqttasiakas = mqtt.Client("valojenohjaus-laskettu")  # mqtt objektin luominen, tulla olla uniikki nimi
@@ -51,7 +52,6 @@ def alusta():
     mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
     
 def valojen_ohjaus(status):
-    global mqttasiakas
     ''' Status on joko 1 tai 0 riippuen siitä mitä releelle lähetetään'''
     """ Tassa kaytetaan salaamatonta porttia ilman TLS:aa, vaihda tarvittaessa """
     try:
