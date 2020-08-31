@@ -40,17 +40,31 @@ Longitudin ja latitudin saat syöttämällä osoitteen esimerkiksi Google Mapsii
 
 def mqttyhdista(mqttasiakas, userdata, flags, rc):
     """ Yhdistetaan mqtt-brokeriin ja tilataan aiheet """
-    mqttasiakas.subscribe(VARASTO_POHJOINEN_RELE1_MQTTAIHE_1)  # tilaa aihe releelle 1
     mqttasiakas.subscribe(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2)  # tilaa aihe releelle 2
-
-def ohjausluuppi():
-    """ Tassa kaytetaan salaamatonta porttia ilman TLS:aa, vaihda tarvittaessa """
+    
+def alusta():
     broker = MQTTSERVERI  # brokerin osoite
     port = MQTTSERVERIPORTTI
     mqttasiakas = mqtt.Client("valojenohjaus-laskettu")  # mqtt objektin luominen, tulla olla uniikki nimi
     mqttasiakas.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
     mqttasiakas.connect(broker, port, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
     mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
+    
+def valojen_ohjaus(status):
+    global mqttasiakas
+    ''' Status on joko 1 tai 0 riippuen siitä mitä releelle lähetetään'''
+    """ Tassa kaytetaan salaamatonta porttia ilman TLS:aa, vaihda tarvittaessa """
+    try:
+        ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 1 tarkoittaa päällä '''
+        mqttasiakas.publish(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2, payload=status, retain=True)
+    except OSError:
+        print("Virhe %d" % OSError)
+        logging.error('Valonohjaus OS-virhe %s' % OSError)
+    return
+    
+
+def ohjausluuppi():
+    alusta()
     ''' Muuttujat ja liipaisimet '''
     valot_paalla = False
     lisa_aika_paalla = False
@@ -99,60 +113,30 @@ def ohjausluuppi():
 
             ''' Valojen sytytys ja sammutuslogiikka'''
             if (aurinko_laskenut == True) and (paalla_pito_ajalla == True) and (valot_paalla == False):
-                try:
-                    ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 1 tarkoittaa päällä '''
-                    mqttasiakas.publish(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2, payload=1, retain=True)
-                    valot_paalla = True
-                    print ("Valot sytytetty paallapitoajan mukaisesti.")
-                except OSError:
-                    print("Virhe %d" % OSError)
-                    logging.error('Valonohjaus OS-virhe %s' % OSError)
+                valojen_ohjaus(1)
+                valot_paalla = True
+                print ("Valot sytytetty paallapitoajan mukaisesti.")
             if (aurinko_laskenut == True) and (paalla_pito_ajalla == False) and (valot_paalla == True):
-                try:
-                    ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 0 tarkoittaa pois päältä '''
-                    mqttasiakas.publish(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2, payload=0, retain=True)
-                    print("Valot sammutettu paallapitoajan mukaisesti.")
-                    valot_paalla = False
-                except OSError:
-                    print("Virhe %d" % OSError)
-                    logging.error('Valonohjaus OS-virhe %s' % OSError)
+                valojen_ohjaus(0)
+                valot_paalla = False
+                print("Valot sammutettu paallapitoajan mukaisesti.")
             ''' !! Emme huomioi sitä jos lisäaika on myöhäisempi kuin sammutusaika !! '''
             if (aurinko_laskenut == True) and (lisa_aika_paalla == True) and (valot_paalla == False):
-                try:
-                    ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 1 tarkoittaa päällä '''
-                    mqttasiakas.publish(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2, payload=1, retain=True)
-                    valot_paalla = True
-                    print("Valot sytytetty lisa-ajan mukaisesti")
-                except OSError:
-                    print("Virhe %d" % OSError)
-                    logging.error('Valonohjaus OS-virhe %s' % OSError)
+                valojen_ohjaus(1)
+                valot_paalla = True
+                print("Valot sytytetty lisa-ajan mukaisesti")
             if (aurinko_laskenut == True) and (lisa_aika_paalla == False) and (valot_paalla == True):
-                try:
-                    ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 0 tarkoittaa pois päältä '''
-                    mqttasiakas.publish(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2, payload=0, retain=True)
-                    valot_paalla = True
-                    print("Valot sammutettu lisa-ajan mukaisesti")
-                except OSError:
-                    print("Virhe %d" % OSError)
-                    logging.error('Valonohjaus OS-virhe %s' % OSError)
+                valojen_ohjaus(0)
+                valot_paalla = False
+                print("Valot sammutettu lisa-ajan mukaisesti")
             if (aurinko_laskenut == True) and (ennakko_ajalla == True) and (valot_paalla == False):
-                try:
-                    ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 1 tarkoittaa päällä '''
-                    mqttasiakas.publish(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2, payload=1, retain=True)
-                    valot_paalla = True
-                    print("Valot sytytetty ennakkoajan mukaisesti")
-                except OSError:
-                    print("Virhe %d" % OSError)
-                    logging.error('Valonohjaus OS-virhe %s' % OSError)
+                valojen_ohjaus(1)
+                valot_paalla = True
+                print("Valot sytytetty ennakkoajan mukaisesti")
             if (aurinko_laskenut == True) and (ennakko_ajalla == False) and (valot_paalla == True):
-                try:
-                    ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 0 tarkoittaa pois päältä '''
-                    mqttasiakas.publish(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2, payload=0, retain=True)
-                    valot_paalla = False
-                    print("Valot sammutettu ennakkoajan mukaisesti")
-                except OSError:
-                    print("Virhe %d" % OSError)
-                    logging.error('Valonohjaus OS-virhe %s' % OSError)
+                valojen_ohjaus(0)
+                valot_paalla = False
+                print("Valot sammutettu ennakkoajan mukaisesti")
 
             time.sleep(10) # suoritetaan 10s valein
 
