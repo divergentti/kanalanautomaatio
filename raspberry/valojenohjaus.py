@@ -8,7 +8,7 @@ valoantureilla, mutta lisätieto auringon nousu- ja laskuajoista voi olla myös 
 
 Tämä scripti laskee auringon nousu- ja laskuajat ja lähettää mqtt-komennon valojen päälle kytkemiseen tai sammuttamiseen.
 
-Muuttujina valojen päälläolon suhteen ovat VALO_PAALLAPITO, VALOT_POIS_KLO ja VALO_ENNAKKO_AIKA.
+Muuttujina valojen päälläolon suhteen ovat VALOT_POIS_KLO ja VALO_ENNAKKO_AIKA.
 - VALOT_POIS tarkoittaa ehdotonta aikaa, jolloin valot laitetaan pois (string TT:MM)
 - VALO_ENNAKKO_AIKA tarkoittaa aikaa jolloin valot sytytetään ennen auringonnousua (string TT:MM).
 
