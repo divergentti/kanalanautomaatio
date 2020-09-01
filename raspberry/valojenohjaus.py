@@ -51,7 +51,7 @@ def alusta():
     mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
 
 def valojen_ohjaus(status):
-    global mqttasiakas
+   
     ''' Status on joko 1 tai 0 riippuen siitä mitä releelle lähetetään'''
     """ Tassa kaytetaan salaamatonta porttia ilman TLS:aa, vaihda tarvittaessa """
     try:
