@@ -58,6 +58,12 @@ def alusta():
 
 def valojen_ohjaus(status):
     ''' Status on joko 1 tai 0 riippuen siitä mitä releelle lähetetään'''
+    broker = MQTTSERVERI  # brokerin osoite
+    port = MQTTSERVERIPORTTI
+    mqttasiakas.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
+    mqttasiakas.connect(broker, port, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
+    mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
+    
     """ Tassa kaytetaan salaamatonta porttia ilman TLS:aa, vaihda tarvittaessa """
     try:
         ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 1 tarkoittaa päällä '''
@@ -69,11 +75,6 @@ def valojen_ohjaus(status):
 
 
 def ohjausluuppi():
-    broker = MQTTSERVERI  # brokerin osoite
-    port = MQTTSERVERIPORTTI
-    mqttasiakas.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
-    mqttasiakas.connect(broker, port, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
-    mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
     
     alusta()
 
