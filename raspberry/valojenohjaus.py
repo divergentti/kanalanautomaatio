@@ -46,11 +46,7 @@ def mqttyhdista(mqttasiakas, userdata, flags, rc):
     mqttasiakas.subscribe(VARASTO_POHJOINEN_RELE2_MQTTAIHE_2)  # tilaa aihe releelle 2
 
 def alusta():
-    broker = MQTTSERVERI  # brokerin osoite
-    port = MQTTSERVERIPORTTI
-    mqttasiakas.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
-    mqttasiakas.connect(broker, port, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
-    mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
+    
     ''' Scriptin aloituksessa lähetetään varmuuden vuoksi valot pois'''
     try:
         ''' mqtt-sanoma voisi olla esim. koti/ulko/etela/valaistus ja rele 1 tarkoittaa päällä '''
@@ -73,6 +69,12 @@ def valojen_ohjaus(status):
 
 
 def ohjausluuppi():
+    broker = MQTTSERVERI  # brokerin osoite
+    port = MQTTSERVERIPORTTI
+    mqttasiakas.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
+    mqttasiakas.connect(broker, port, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
+    mqttasiakas.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
+    
     alusta()
 
     ''' Testaamista varten
