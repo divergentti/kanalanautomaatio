@@ -118,6 +118,7 @@ def ohjausluuppi():
     global liike_loppunut_klo
     global liiketta_havaittu
     pitoajalla = False
+    liikeyllapitoajalla = False
 
     ''' Toistetaan yhteydenotto, sillä yhteys on voinut katketa keepalive-asetuksen mukaisesti '''
     broker = MQTTSERVERI  # brokerin osoite
@@ -197,7 +198,8 @@ def ohjausluuppi():
 
 
             ''' Aurinko laskenut ja valot päällä, mutta sammutusaika saavutettu '''
-            if (aurinko_laskenut == True) and (valot_paalla == True) and (aika_nyt_arvo >= pois_arvo):
+            if (aurinko_laskenut == True) and (valot_paalla == True) and (aika_nyt_arvo >= pois_arvo) and \
+               (liikeyllapitoajalla == False):
                 valojen_ohjaus(0)
                 valot_paalla = False
                 pitoajalla = False
@@ -230,13 +232,17 @@ def ohjausluuppi():
             if (aurinko_laskenut == True) and (valot_paalla == False) and (liiketta_havaittu == True):
                 valojen_ohjaus(1)
                 valot_paalla = True
+                liikeyllapitoajalla = True
                 valot_ohjattu_paalle = datetime.datetime.now()
                 print("Valot sytytetty liiketunnistunnistuksen vuoksi")
-            elif (aurinko_laskenut == True) and (valot_paalla == True) and (liiketta_havaittu == False) and \
+            if (aurinko_laskenut == True) and (valot_paalla == True) and (liiketta_havaittu == False) and \
                     (loppumisaika_delta > LIIKE_PAALLAPITO_AIKA) and (pitoajalla == False):
                 valojen_ohjaus(0)
                 valot_paalla = False
+                liikeyllapitoajalla = False
                 valot_ohjattu_pois = datetime.datetime.now()
+                print("Valot sammutettu paallapidon loppumisajan vuoksi")
+
 
             time.sleep(0.1) # suoritetaan 0.1s valein
 
