@@ -1,4 +1,5 @@
 #suorita python3 komennolla!
+''' Alkuperäinen https://gist.github.com/zufardhiyaulhaq/fe322f61b3012114379235341b935539 '''
 import re
 from typing import NamedTuple
 
