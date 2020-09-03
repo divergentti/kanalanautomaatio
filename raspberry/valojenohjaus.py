@@ -117,6 +117,7 @@ def ohjausluuppi():
     global liiketta_havaittu_klo
     global liike_loppunut_klo
     global liiketta_havaittu
+    pitoajalla = False
 
     ''' Toistetaan yhteydenotto, sillä yhteys on voinut katketa keepalive-asetuksen mukaisesti '''
     broker = MQTTSERVERI  # brokerin osoite
@@ -190,6 +191,7 @@ def ohjausluuppi():
             if (aurinko_laskenut == True) and (valot_paalla == False) and (aika_nyt_arvo < pois_arvo):
                 valojen_ohjaus(1)
                 valot_paalla = True
+                pitoajalla = True
                 valot_ohjattu_paalle = datetime.datetime.now()
                 print("Aurinko laskenut. Valot sytytetty.")
 
@@ -198,6 +200,7 @@ def ohjausluuppi():
             if (aurinko_laskenut == True) and (valot_paalla == True) and (aika_nyt_arvo >= pois_arvo):
                 valojen_ohjaus(0)
                 valot_paalla = False
+                pitoajalla = False
                 valot_ohjattu_pois = datetime.datetime.now()
                 valot_olivat_paalla = valot_ohjattu_pois - valot_ohjattu_paalle
                 print("Valot sammutettu. Valot olivat päällä %s" % valot_olivat_paalla)
@@ -208,6 +211,7 @@ def ohjausluuppi():
                 and (valot_ohjattu_pois.date() != aika_nyt_paiva):
                 valojen_ohjaus(1)
                 valot_paalla = True
+                pitoajalla = True
                 valot_ohjattu_paalle = datetime.datetime.now()
                 print("Valot sytytetty ennakkoajan mukaisesti")
 
@@ -215,6 +219,7 @@ def ohjausluuppi():
             if (aurinko_noussut == True) and (valot_paalla == True):
                 valojen_ohjaus(0)
                 valot_paalla = False
+                pitoajalla = False
                 valot_ohjattu_pois = datetime.datetime.now()
                 valot_olivat_paalla = valot_ohjattu_pois - valot_ohjattu_paalle
                 print("Aurinko noussut. Valot sammutettu. Valot olivat päällä: %s" % valot_olivat_paalla)
@@ -228,7 +233,7 @@ def ohjausluuppi():
                 valot_ohjattu_paalle = datetime.datetime.now()
                 print("Valot sytytetty liiketunnistunnistuksen vuoksi")
             elif (aurinko_laskenut == True) and (valot_paalla == True) and (liiketta_havaittu == False) and \
-                    (loppumisaika_delta > LIIKE_PAALLAPITO_AIKA):
+                    (loppumisaika_delta > LIIKE_PAALLAPITO_AIKA) and (pitoajalla == False):
                 valojen_ohjaus(0)
                 valot_paalla = False
                 valot_ohjattu_pois = datetime.datetime.now()
