@@ -11,9 +11,9 @@ voit käsitellä laitteen tiedostoja joko WebREPL tai konsoliportin kautta.
 
 
 import utime
-import time
 import machine
 import network
+import time
 import ntptime
 import esp
 import webrepl
@@ -23,22 +23,7 @@ from parametrit import SSID1, SSID2, SALASANA1, SALASANA2, WEBREPL_SALASANA, NTP
 machine.freq(240000000)  # Aluksi maksimipotku prosessoriin
 esp.osdebug(None)
 wificlient_if = network.WLAN(network.STA_IF)
-wificlient_if.active(False)
-
-
-def yhdista_wifi(ssid_nimi, salasana):
-    global wificlient_if
-    print("Kokeillaan %s" % ssid_nimi)
-    wificlient_if.active(True)
-    if DHCP_NIMI is not None:
-        wificlient_if.config(dhcp_hostname=DHCP_NIMI)
-    wificlient_if.connect(ssid_nimi, salasana)
-    time.sleep(2)
-    if wificlient_if.isconnected():
-        aseta_aika()
-        return True
-    else:
-        return False
+wificlient_if.active(True)
 
 
 def ei_voida_yhdistaa():
@@ -48,51 +33,63 @@ def ei_voida_yhdistaa():
 
 
 def aseta_aika():
+    if NTPPALVELIN is not None:
+        ntptime.host = NTPPALVELIN
     try:
-        if NTPPALVELIN is not None:
-            ntptime.host = NTPPALVELIN
         ntptime.settime()
     except OSError as e:
         print("NTP-palvelimelta %s ei saatu aikaa! Virhe %s" % (NTPPALVELIN, e))
         ei_voida_yhdistaa()
+    print("Aika: %s " % str(utime.localtime(utime.time())))
 
 
-def jatka():
-    """
-    :rtype: wificlient_if
-    """
+def kaynnista_webrepl():
     if WEBREPL_SALASANA is not None:
-        try:
-            webrepl.start(password=WEBREPL_SALASANA)
-            webrepl.start()
-        except OSError as e:
-            print("WebREPL ei kaynnisty. Virhe %s" % e)
-            ei_voida_yhdistaa()
-    print("Aika: %s " % utime.localtime(utime.time()))
-    print('Verkon kokoonpano:', wificlient_if.ifconfig())
-    print("WiFi signaalitaso %s" % (wificlient_if.status('rssi')))
-    machine.freq(80000000)  # hidastetaan
-
-
-if wificlient_if.isconnected() is True:
-    jatka()
-
-
-if SSID1 is None and SSID2 is None:
-    print("Aseta SSID1 ja/tai SSID2 nimi ja salasana paramterit.py-tiedostossa!")
-    raise Exception("Aseta SSID1 ja/tai SSID2 nimi ja salasana paramterit.py-tiedostossa!")
+        webrepl.start(password=WEBREPL_SALASANA)
+    try:
+        webrepl.start()
+    except OSError as e:
+        print("WebREPL ei kaynnisty. Virhe %s" % e)
+        raise Exception("WebREPL ei ole asenettu! Suorita import webrepl_setup")
 
 
 if wificlient_if.isconnected() is False:
-    if SSID1 is not None and SALASANA1 is not None:
+    yritetty_ssid1 = False
+    yritetty_ssid2 = False
+    if SSID1 is None:
+        print("Aseta SSID1 nimi ja salasana paramterit.py-tiedostossa!")
+        raise Exception("Aseta SSID1 ja salasana paramterit.py-tiedostossa!")
+    print("Kokeillaan verkkoa %s" % SSID1)
+
+    if DHCP_NIMI is not None:
+        wificlient_if.config(dhcp_hostname=DHCP_NIMI)
+
+    if (yritetty_ssid1 is False) and wificlient_if.isconnected() is False:
         try:
-            yhdista_wifi(SSID1, SALASANA1)
-        except False:
-            if SSID2 is not None and SALASANA2 is not None:
-                try:
-                    yhdista_wifi(SSID2, SALASANA2)
-                except False:
-                    print("Yhdistys ei onnistu, bootataan!")
-                    ei_voida_yhdistaa()
-else:
-    jatka()
+            wificlient_if.connect(SSID1, SALASANA1)
+            yritetty_ssid1 = True
+        except OSError:
+            ei_voida_yhdistaa()
+
+    time.sleep(3)
+
+    if (SSID2 is not None) and (wificlient_if.isconnected() is False) and (yritetty_ssid1 is True):
+        print("Kokeillaan verkkoa %s" % SSID2)
+        try:
+            wificlient_if.connect(SSID2, SALASANA2)
+            yritetty_ssid2 = True
+        except OSError:
+            ei_voida_yhdistaa()
+
+    time.sleep(3)
+
+    if (yritetty_ssid1 is True) and (yritetty_ssid2 is True) and (wificlient_if.isconnected() is False):
+        print("Ei voida yhdistaa! Bootataan")
+        ei_voida_yhdistaa()
+
+    if wificlient_if.isconnected() is True:
+        aseta_aika()
+        kaynnista_webrepl()
+        print('Laitteen IP-osoite:', wificlient_if.ifconfig()[0])
+        print("WiFi-verkon signaalitaso %s" % (wificlient_if.status('rssi')))
+        machine.freq(80000000)  # hidastetaan
