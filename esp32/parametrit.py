@@ -7,6 +7,7 @@ MQTT_PORTTI = '1883'
 MQTT_KAYTTAJA = 'useri'
 MQTT_SALASANA = 'salari'
 CLIENT_ID = "ESP32-ulkoanturi"
+DHCP_NIMI = "ESP32-ulkoanturi"
 PINNI_NUMERO = 4
 DHT22_LAMPO = b'kanala/ulko/lampo'
 DHT22_KOSTEUS = b'kanala/ulko/kosteus'
