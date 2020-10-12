@@ -24,42 +24,45 @@
     - lämpötilaarvo tulee olla välillä - 40 + 100 astetta, muuten anturi tulkitaan vialliseksi
     - kosteusarvon tulee olla välillä 0 - 100, muuten anturi tulkitaan vialliseksi
 
+    Muutokset:
+    12.10.2020: Korjattu client-connect
+
 """
 import math  # tarvitaan laskennassa
 import time
 import utime
-import machine # tuodaan koko kirjasto
+import machine  # tuodaan koko kirjasto
 from machine import Pin
 from machine import ADC
 from umqttsimple import MQTTClient
 import network
 import gc
-import dht #  DHT22 jne antureille
-
-gc.enable()  # aktivoidaan automaattinen roskankeruu
-
-""" asetetaan hitaampi kellotus 20MHz, 40MHz, 80Mhz, 160MHz or 240MHz 
-    Hitaammalla kellotuksella prosessori lämpenee vähemmän """
-machine.freq(80000000)
-print ("Prosessorin nopeus asetettu: %s" %machine.freq())
-
-# Globaalit
-lampo = 0
-kosteus = 0
-anturivirhe = 0
-
-# Raspberry WiFi on huono ja lisaksi raspin pitaa pingata ESP32 jotta yhteys toimii!
-sta_if = network.WLAN(network.STA_IF)
+import dht  # DHT22 jne antureille
 
 # tuodaan parametrit tiedostosta parametrit.py
 from parametrit import CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, \
     MQTT_SALASANA, SISA_PPM, MQ135_PINNI, DHT22_LAMPO, DHT22_KOSTEUS, \
     DHT22_LAMPO_KORJAUSKERROIN, DHT22_KOSTEUS_KORJAUSKERROIN, PINNI_NUMERO
 
+gc.enable()  # aktivoidaan automaattinen roskankeruu
+
+""" asetetaan hitaampi kellotus 20MHz, 40MHz, 80Mhz, 160MHz or 240MHz 
+    Hitaammalla kellotuksella prosessori lämpenee vähemmän """
+machine.freq(80000000)
+print("Prosessorin nopeus asetettu: %s" % machine.freq())
+
+# Globaalit
+lampo = 0
+kosteus = 0
+anturivirhe = 0
+
+sta_if = network.WLAN(network.STA_IF)
+
 """ mtqq-clientin yhdistaminen """
 client = MQTTClient(CLIENT_ID, MQTT_SERVERI, MQTT_PORTTI, MQTT_KAYTTAJA, MQTT_SALASANA)
 """  dht-kirjasto tukee muitakin antureita kuin dht22 """
 anturi = dht.DHT22(Pin(PINNI_NUMERO))
+
 
 class MQ135(object):
     """
@@ -109,7 +112,8 @@ class MQ135(object):
         """
 
         if temperature < 20:
-            return self.CORA * temperature * temperature - self.CORB * temperature + self.CORC - (humidity - 33.) * self.CORD
+            return self.CORA * temperature * temperature - self.CORB * temperature + self.CORC \
+                             - (humidity - 33.) * self.CORD
 
         return self.CORE * temperature + self.CORF * humidity + self.CORG
 
@@ -124,16 +128,16 @@ class MQ135(object):
 
     def get_corrected_resistance(self, temperature, humidity):
         """Gets the resistance of the sensor corrected for temperature/humidity"""
-        return self.get_resistance()/ self.get_correction_factor(temperature, humidity)
+        return self.get_resistance() / self.get_correction_factor(temperature, humidity)
 
     def get_ppm(self):
         """Returns the ppm of CO2 sensed (assuming only CO2 in the air)"""
-        return self.PARA * math.pow((self.get_resistance()/ self.RZERO), -self.PARB)
+        return self.PARA * math.pow((self.get_resistance() / self.RZERO), -self.PARB)
 
     def get_corrected_ppm(self, temperature, humidity):
         """Returns the ppm of CO2 sensed (assuming only CO2 in the air)
         corrected for temperature/humidity"""
-        return self.PARA * math.pow((self.get_corrected_resistance(temperature, humidity)/ self.RZERO), -self.PARB)
+        return self.PARA * math.pow((self.get_corrected_resistance(temperature, humidity) / self.RZERO), -self.PARB)
 
     def get_rzero(self):
         """Returns the resistance RZero of the sensor (in kOhms) for calibratioin purposes"""
@@ -144,23 +148,20 @@ class MQ135(object):
         corrected for temperature/humidity"""
         return self.get_corrected_resistance(temperature, humidity) * math.pow((self.ATMOCO2/self.PARA), (1./self.PARB))
 
+
 def ratkaise_aika():
     (vuosi, kuukausi, kkpaiva, tunti, minuutti, sekunti, viikonpva, vuosipaiva) = utime.localtime()
-    paivat = {0: "Ma", 1: "Ti", 2: "Ke", 3: "To", 4: "Pe", 5: "La", 6: "Su"}
-    kuukaudet = {1: "Tam", 2: "Hel", 3: "Maa", 4: "Huh", 5: "Tou", 6: "Kes", 7: "Hei", 8: "Elo",
-              9: "Syy", 10: "Lok", 11: "Mar", 12: "Jou"}
-    #.format(paivat[viikonpva]), format(kuukaudet[kuukausi]),
-    aika = "%s.%s.%s klo %s:%s:%s" % (kkpaiva, kuukausi, \
-           vuosi, "{:02d}".format(tunti), "{:02d}".format(minuutti), "{:02d}".format(sekunti))
+    aika = "%s.%s.%s klo %s:%s:%s" % (kkpaiva, kuukausi, vuosi, "{:02d}".format(tunti),
+                                      "{:02d}".format(minuutti), "{:02d}".format(sekunti))
     return aika
+
 
 def mqtt_palvelin_yhdista():
     aika = ratkaise_aika()
     if sta_if.isconnected():
         try:
             client.connect()
-
-        except OSError as e:
+        except OSError:
             print("% s:  Ei voida yhdistaa! " % aika)
             time.sleep(10)
             restart_and_reconnect()
@@ -168,29 +169,28 @@ def mqtt_palvelin_yhdista():
         return True
     else:
         print("%s: Yhteys on poikki! " % aika)
-        # client.disconnect()
         restart_and_reconnect()
         return False
+
 
 def lue_ja_tallenna_lampo_ja_kosteus():
     global anturivirhe, lampo, kosteus
     aika = ratkaise_aika()
-    vilkuta_ledi(1)
     try:
         anturi.measure()
-    except OSError as e:
+    except OSError:
         print("%s: Sensoria ei voida lukea!" % aika)
         anturivirhe = anturivirhe + 1
-        if anturi >5:
+        if anturi > 5:
             print("Liikaa anturivirheitä!")
             restart_and_reconnect()
         return False
     lampo = anturi.temperature() * DHT22_LAMPO_KORJAUSKERROIN
     kosteus = anturi.humidity() * DHT22_KOSTEUS_KORJAUSKERROIN
-    if lampo < 40 or lampo > 100:
+    if (lampo < 40) or (lampo > 100):
         anturivirhe = anturivirhe + 1
-    if kosteus <1 or kosteus > 100:
-        anturivirhe = anturivirhe +1
+    if (kosteus < 1) or (kosteus > 100):
+        anturivirhe = anturivirhe + 1
     print('Lampo: %3.1f C' % lampo)
     print('Kosteus: %3.1f %%' % kosteus)
     print("%s: Tallenntaan arvot mqtt-palvelimeen %s ..." % (aika,  MQTT_SERVERI))
@@ -199,13 +199,13 @@ def lue_ja_tallenna_lampo_ja_kosteus():
     if sta_if.isconnected():
         try:
             client.publish(DHT22_LAMPO, str(lampo))
-        except OSError as e:
+        except OSError:
             print("%s: Arvoa %s ei voida tallentaa! " % (aika, str(lampo)))
             anturivirhe = anturivirhe + 1
             return False
         try:
             client.publish(DHT22_KOSTEUS, str(kosteus))
-        except OSError as e:
+        except OSError:
             print("%s: Arvoa %s ei voida tallentaa! " % (aika, str(kosteus)))
             anturivirhe = anturivirhe + 1
             return False
@@ -214,17 +214,16 @@ def lue_ja_tallenna_lampo_ja_kosteus():
         return True
     else:
         print("%s: Yhteys on poikki!" % aika)
-        client.disconnect()
         restart_and_reconnect()
         return False
+
 
 def laheta_ppm_mqtt(ppm):
     aika = ratkaise_aika()
     if sta_if.isconnected():
         try:
-            client.connect()
             client.publish(SISA_PPM, str(ppm))  # julkaistaan ppm arvo
-        except OSError as e:
+        except OSError:
             print("% s:  Ei voida yhdistaa! " % aika)
             time.sleep(10)
             restart_and_reconnect()
@@ -232,9 +231,9 @@ def laheta_ppm_mqtt(ppm):
         return True
     else:
         print("%s: Yhteys on poikki! " % aika)
-        # client.disconnect()
         restart_and_reconnect()
         return False
+
 
 def vilkuta_ledi(kertaa):
     ledipinni = machine.Pin(2, machine.Pin.OUT)
@@ -244,6 +243,7 @@ def vilkuta_ledi(kertaa):
         ledipinni.off()
         utime.sleep_ms(100)
 
+
 def restart_and_reconnect():
     aika = ratkaise_aika()
     print('%s: Ongelmia. Boottaillaan 5s kuluttua.' % aika)
@@ -252,7 +252,8 @@ def restart_and_reconnect():
     machine.reset()
     # resetoidaan
 
-def palauta_PPM():
+
+def palauta_ppm():
     global lampo, kosteus
     loopin_alkuaika = utime.time()
     mqtt_palvelin_yhdista()
@@ -262,40 +263,32 @@ def palauta_PPM():
     mq135 = MQ135(Pin(MQ135_PINNI))  # objektin luonti, analogi PIN 0 ESP32 ADC0
     ppm_lista = []  # keskiarvon laskentaa varten
     aika = ratkaise_aika()
-    print("%s Luetaan ensimmaiset 60 arvoa listalle kerran sekunnissa ... odota" %aika)
+    print("%s Luetaan ensimmaiset 60 arvoa listalle kerran sekunnissa ... odota" % aika)
     # looppi
     while True:
         try:
             # luetaan mq-135 sensorilta uusi tieto
             ppm_lista.append(mq135.get_corrected_ppm(temperature, humidity))
-            vilkuta_ledi(1)
         except ValueError:
             pass
         # lasketaan minuutin keskiarvo PPM:lle
         if len(ppm_lista) == 60:
             keskiarvo = sum(ppm_lista) / len(ppm_lista)
-            print("Tallennettava keskiarvo on: %s ppm" %keskiarvo)
+            print("Tallennettava keskiarvo on: %s ppm" % keskiarvo)
             """ Tarkistetaan onko looppi toiminut yli vuorokauden, jolloin anturi on kalibroitunut
                 ja tämän jälkeen arvioidaan ilmanlaatua """
             print("Looppi toiminnassa %s sekuntia" % (utime.time()-loopin_alkuaika))
-            if utime.time()-loopin_alkuaika > 86400:
-                if keskiarvo > 800 and keskiarvo < 2000:
-                    print ("Ilma tunkkainen! Odota ja seuraa tilannetta.")
-                if keskiarvo > 2000 and keskiarvo <5000:
-                    print("Sisailma aiheuttaa paansarkya ja terveyshaittoja! Lisaa ilmanvaihtoa!")
-                if keskiarvo > 5000:
-                    print("Sisailma myrkyllinen!")
             # julkaistaan keskiarvo mqtt ilman arvon tarkistusta
             laheta_ppm_mqtt(keskiarvo)
-            vilkuta_ledi(2)
-            ppm_lista.clear() # nollataan lista
+            ppm_lista.clear()  # nollataan lista
             # Odotetaan uutta lampo ja kosteus
             lue_ja_tallenna_lampo_ja_kosteus()
             temperature = float(lampo)
             humidity = float(kosteus)
             aika = ratkaise_aika()
-            print ("%s Luetaan seuraavat 60 arvoa listalle... odota" %aika)
+            print("%s Luetaan seuraavat 60 arvoa listalle... odota" % aika)
         time.sleep(1)  # lukuvali 1s.
 
+
 if __name__ == "__main__":
-    palauta_PPM()
+    palauta_ppm()
