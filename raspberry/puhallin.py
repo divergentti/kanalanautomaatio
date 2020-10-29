@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Kutsutaan crontabista, argumenttina numero väliltä 0 -3 
 # ohjaa mqtt-viesteilla tassa tapauksessa reletta, joka ohjaa kanalan puhallinta
 # Jari Hiltunen 14.6.2020
 # parametrina releen ohjaustieto, joka voi olla:
