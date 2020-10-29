@@ -418,10 +418,11 @@ def ohjausluuppi():
         try:
             laske_auringon_lasku()
             if (aurinko_noussut is True) or (suljettu_lahetetty is False):
-                """ Sammutetaan valot """
-                ulkovalot.valojen_ohjaus(0)
-                ulkovalot.liikeyllapitoajalla = False
-                ulkovalot.valot_ohjattu_pois = datetime.datetime.now().astimezone(aikavyohyke)
+                if ulkovalot.valot_paalla is True:
+                    """ Sammutetaan valot """
+                    ulkovalot.valojen_ohjaus(0)
+                    ulkovalot.liikeyllapitoajalla = False
+                    ulkovalot.valot_ohjattu_pois = datetime.datetime.now().astimezone(aikavyohyke)
             luukku_looppi()
             """ Tarkkaillaan tunnistaako jokin objekti liikettä luukun sulkemisen jälkeen """
             if (suljettu_lahetetty is True) and (aurinko_laskenut is True):
