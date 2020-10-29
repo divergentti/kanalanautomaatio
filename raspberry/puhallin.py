@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # Kutsutaan crontabista, argumenttina numero väliltä 0 -3 
+# 10 20 * * 1,2,3,4,5,6,0 python3 /home/pi/Kanala/puhallin.py 2 >/dev/null 2>&1
+# 30 20 * * 1,2,3,4,5,6,0 python3 /home/pi/Kanala/puhallin.py 0 >/dev/null 2>&1
 # ohjaa mqtt-viesteilla tassa tapauksessa reletta, joka ohjaa kanalan puhallinta
 # Jari Hiltunen 14.6.2020
 # parametrina releen ohjaustieto, joka voi olla:
