@@ -47,7 +47,7 @@ mqttvalot.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
 
 def virhe_loggeri(login_formaatti='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                   login_nimi='', logitiedosto_infoille='/home/pi/Kanala/info/ohjausulkovalo-info.log',
-                  logitiedosto_virheille='/home/pi/Kanala/info/ohjausulkovalo-virhe.log'):
+                  logitiedosto_virheille='/home/pi/Kanala/virheet/ohjausulkovalo-virhe.log'):
     logi = logging.getLogger(login_nimi)
     login_formaatti = logging.Formatter(login_formaatti)
     stream_handler = logging.StreamHandler()
