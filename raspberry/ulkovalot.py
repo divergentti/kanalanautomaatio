@@ -385,7 +385,7 @@ def ohjausluuppi():
                 ulkovalot.valot_ohjattu_paalle = datetime.datetime.now().astimezone(aikavyohyke)
             elif (aurinko_laskenut is True) and (luukku_auki is False) and \
                     (datetime.datetime.now().astimezone(aikavyohyke) - luukku_suljettu_aika) >= \
-                    datetime.timedelta(minutes=60) and (ulkovalot.valot_paalla is False):
+                    datetime.timedelta(minutes=60) and (ulkovalot.valot_paalla is True):
                 """" Luukun sulkemisesta yli 60 minuuttia. Sammutetaan valot """
                 ulkovalot.valojen_ohjaus(0)
                 ulkovalot.pitoajalla = False
