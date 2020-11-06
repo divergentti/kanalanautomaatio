@@ -32,8 +32,7 @@ from parametrit import VALOANTURINIMI, MQTTKAYTTAJA, MQTTSALARI, MQTTSERVERI, MQ
 ''' Objektien luonti '''
 valosensori = SI1145.SI1145()
 mqttanturi = mqtt.Client(VALOANTURINIMI)   # mqtt objektin luominen
-mqttanturi.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
-mqttanturi.connect(MQTTSERVERI, port=MQTTSERVERIPORTTI, keepalive=60)  # Yhteys brokeriin
+
 
 ''' Globaalit päivämäärämuuttujat'''
 aikavyohyke = tz.tzlocal()
@@ -75,14 +74,30 @@ def liikaa_virheita():
     time.sleep(60)
 
 
+def mqttyhdista(client, userdata, flags, rc):
+    print("Yhdistetty statuksella " + str(rc))
+    loggeri.info("%s: Yhdistetty statuksella %s" % (datetime.datetime.now(), str(rc)))
+
+
+def mqtt_pura_yhteys(client, userdata, rc=0):
+    loggeri.info("%s: Purettu yhteys statuksella %s" % (datetime.datetime.now(), str(rc)))
+
+
+def alustus():
+    mqttanturi.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
+    mqttanturi.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
+    mqttanturi.on_disconnect = mqtt_pura_yhteys  # puretaan yhteys disconnectissa
+    mqttanturi.connect(MQTTSERVERI, MQTTSERVERIPORTTI, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
+
+
 def paaluuppi():
     """ Scripti lukee arvoja kerran 10s. listaan, josta lasketaan
         keskiarvo, joka lahetetaan palvelimelle. """
     loggeri.info('PID %s. Sovellus käynnistetty %s' % (os.getpid(), datetime.datetime.now().astimezone(aikavyohyke)))
+    alustus()
     valoisuus_lista = []  # keskiarvon laskentaa varten
     infrapuna_lista = []
     uv_lista = []
-
     virhelaskuri = 0  # virhelaskentaa varten
 
     while True:
@@ -91,7 +106,8 @@ def paaluuppi():
             infrapuna = valosensori.readIR()
             uv = valosensori.readUV()
             uvindeksi = uv / 100.0
-
+            if mqttanturi.is_connected() is False:
+                mqttanturi.reconnect()
             # estetaan vaarat arvot
             if valoisuus is not None:
                 # print('Valoisuus: %s' % valoisuus)
@@ -101,10 +117,10 @@ def paaluuppi():
                     valoisuus_keskiarvo = '{:.1f}'.format(valoisuus_keskiarvo)
                     # print("Tallennettava valoisuusarvo on: %s " % valoisuus_keskiarvo)
                     # julkaistaan keskiarvo mqtt
-                    mqttanturi.publish(AIHEVALOISUUS, payload=valoisuus_keskiarvo, qos=1, retain=True)
+                    mqttanturi.publish(AIHEVALOISUUS, payload=valoisuus_keskiarvo, retain=True)
                     valoisuus_lista.clear()  # nollataan lista
             else:
-                # print(time.strftime("%H:%M:%S ") + "Valoisuustietoa ei saatavilla! %s kerta" % virhelaskuri)
+                print(time.strftime("%H:%M:%S ") + "Valoisuustietoa ei saatavilla! %s kerta" % virhelaskuri)
                 loggeri.error((time.strftime("%H:%M:%S ") + "Valoisuustietoa ei saatavilla! %s kerta" % virhelaskuri))
                 virhelaskuri = virhelaskuri + 1
                 if virhelaskuri >= 50:
@@ -119,7 +135,7 @@ def paaluuppi():
                     infrapuna_keskiarvo = '{:.1f}'.format(infrapuna_keskiarvo)
                     # print("Tallennettava infrapunakeskiarvo on: %s " % infrapuna_keskiarvo)
                     # julkaistaan keskiarvo mqtt
-                    mqttanturi.publish(AIHEINFRAPUNA, payload=infrapuna_keskiarvo, qos=1, retain=True)
+                    mqttanturi.publish(AIHEINFRAPUNA, payload=infrapuna_keskiarvo, retain=True)
                     infrapuna_lista.clear()  # nollataan lista
             else:
                 # print(time.strftime("%H:%M:%S ") + "Infrapunatietoa ei saatavilla! %s kerta" % virhelaskuri)
@@ -137,7 +153,7 @@ def paaluuppi():
                     uv_keskiarvo = '{:.2f}'.format(uv_keskiarvo)
                     # print("Tallennettava uv-keskiarvo on: %s " % uv_keskiarvo)
                     # julkaistaan keskiarvo mqtt
-                    mqttanturi.publish(AIHEUV, payload=uv_keskiarvo, qos=1, retain=True)
+                    mqttanturi.publish(AIHEUV, payload=uv_keskiarvo, retain=True)
                     uv_lista.clear()  # nollataan lista
             else:
                 # print(time.strftime("%H:%M:%S ") + "UV-tietoa ei saatavilla! %s kerta" % virhelaskuri)
