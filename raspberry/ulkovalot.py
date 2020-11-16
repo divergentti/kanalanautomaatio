@@ -4,6 +4,7 @@
  liiketunnistimelta tulleen liiketiedon perusteella.
 
  1.11.2020: Jari Hiltunen
+ 16.11.2020: Korjattu liikkeentunnistus ja lisätty loggausta
 
 """
 
@@ -383,6 +384,7 @@ def ohjausluuppi():
                 ulkovalot.valojen_ohjaus(1)
                 ulkovalot.pitoajalla = True
                 ulkovalot.valot_ohjattu_paalle = datetime.datetime.now().astimezone(aikavyohyke)
+                loggeri.info("%s: Valot ohjattu päälle", ulkovalot.valot_ohjattu_paalle)
             elif (aurinko_laskenut is True) and (luukku_auki is False) and \
                     (datetime.datetime.now().astimezone(aikavyohyke) - luukku_suljettu_aika) >= \
                     datetime.timedelta(minutes=60) and (ulkovalot.valot_paalla is True):
@@ -390,6 +392,10 @@ def ohjausluuppi():
                 ulkovalot.valojen_ohjaus(0)
                 ulkovalot.pitoajalla = False
                 ulkovalot.valot_ohjattu_pois = datetime.datetime.now().astimezone(aikavyohyke)
+                loggeri.info("%s: Valot ohjattu pois", ulkovalot.valot_ohjattu_pois)
+            elif (aurinko_laskenut is True) and (luukku_auki is False) and \
+                    (datetime.datetime.now().astimezone(aikavyohyke) - luukku_suljettu_aika) >= \
+                    datetime.timedelta(minutes=60) and (ulkovalot.valot_paalla is False):
                 """" Tarkkaillaan liikettä """
                 for z in range(len(ohjausobjektit)):
                     liiketunnistus(ohjausobjektit[z][0], ohjausobjektit[z][1])
@@ -399,6 +405,7 @@ def ohjausluuppi():
                 ulkovalot.pitoajalla = False
                 ulkovalot.liikeyllapitoajalla = False
                 ulkovalot.valot_ohjattu_pois = datetime.datetime.now().astimezone(aikavyohyke)
+                loggeri.info("%s: Aurinko noussut. Valot ohjattu pois", ulkovalot.valot_ohjattu_pois)
 
         except KeyboardInterrupt:
             raise
