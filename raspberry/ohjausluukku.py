@@ -12,42 +12,51 @@
  - koodi 3669736: #kiinni
  - koodi 3669729: #auki
 
- 433MHz ohjaus kutsutaan erillista koodia crontabin vuoksi (aika-ajastus).
+ 433MHz ohjaus kutsutaan erillista koodia crontabin vuoksi (aika-ajastus). (muutettu)
 
  Lisäksi scripti lukee reed-releen tilaa siitä onko luukku todella auennut vai eikö ole.
  Mikäli luukun aukeaminen tai sulkeutuminen kestää normaalia pidempään, voi se olla merkki
  luukun vioittumisesta. Reed releen status päivitetään mqtt:n avulla.
 
+ !!!! Suora rpi_rf-kirjaston käyttö vetää koko Raspberry totaalisen jumiin! !!!
+
 
  1.11.2020 Jari Hiltunen
+ 16.11.2020 Muutettu reed-tilan luku siten että jos luukun sulkeutumis- tai avaamisaikana ei tapahdu muutosta,
+    logataan siitä virhe.
+
+
 """
 
 import paho.mqtt.client as mqtt  # mqtt kirjasto
 import RPi.GPIO as GPIO
-import subprocess  # shell-komentoja varten
 import logging
 import datetime
 import os
+import subprocess  # shell-komentoja varten
 import sys
 import signal
 from dateutil import tz
 from suntime import Sun
 import time
 from parametrit import LUUKKUAIHE, REEDPINNI, MQTTSERVERI, MQTTKAYTTAJA, MQTTSALARI, MQTTSERVERIPORTTI, \
-    REEDAIHE, LUUKKUANTURI, LONGITUDI, LATITUDI, ULKOLUUKKU_KIINNI_VIIVE
+    LUUKKUANTURI, LONGITUDI, LATITUDI, ULKOLUUKKU_KIINNI_VIIVE, REEDAIHE
 
 
 """ Objektien luonti """
 mqttluukku = mqtt.Client(LUUKKUANTURI)  # mqtt objektin luominen
 aurinko = Sun(LATITUDI, LONGITUDI)
 
-""" Globaalit muuttujat """
-aiempiviesti = None  # suoritetaan mqtt-retained viestit vain kerran
-suorituksessa = False  # onko luukun avaus tai sulku suorituksessa
-aurinko_laskenut = False  # laskennallinen tieto auringon laskusta
 
 ''' Päivämäärämuuttujat'''
 aikavyohyke = tz.tzlocal()
+
+""" Globaalit muuttujat """
+reed_muutos_aika = datetime.datetime.now()
+luukku_auki = True
+aiempiviesti = None  # suoritetaan mqtt-retained viestit vain kerran
+suorituksessa = False  # onko luukun avaus tai sulku suorituksessa
+aurinko_laskenut = False  # laskennallinen tieto auringon laskusta
 
 
 def virhe_loggeri(login_formaatti='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -108,9 +117,9 @@ def mqtt_viesti(client, userdata, message):
 
 
 def luukku_muutos(status):
-    global aiempiviesti, suorituksessa
+    global aiempiviesti, suorituksessa, luukku_auki
     """ Lähetetään uusiksi luukulle komento joko auki tai kiinni """
-    if (status == 0) and (suorituksessa is False):
+    if (status == 0) and (suorituksessa is False) and (luukku_auki is True):
         print("Lahetaan luukulle kiinni")
         loggeri.info("%s: Lahetaan luukulle kiinni", datetime.datetime.now())
         try:
@@ -123,10 +132,15 @@ def luukku_muutos(status):
             suorita.wait()
             suorituksessa = False
             aiempiviesti = 0
+            """ Tarkistetaan tapahtuiko reed-tilassa muutos """
+            if (datetime.datetime.now() - reed_muutos_aika).total_seconds() > 31:
+                """ Ei muutosta reed-tilassa, sulkeutuiko luukku? """
+                loggeri.error("%s: Luukku ei reed-kytkimen mukaan sulkeutunut!", datetime.datetime.now())
+            luukku_auki = False
         except OSError as e:
             print("Virhe %s" % e)
             loggeri.error('%s: Luukkuohjaus OS-virhe %s' % (datetime.datetime.now(), e))
-    if (status == 1) and (suorituksessa is False):
+    if (status == 1) and (suorituksessa is False) and (luukku_auki is False):
         print("Lahetaan luukulle auki")
         loggeri.info("%s: Lahetaan luukulle auki", datetime.datetime.now())
         try:
@@ -138,41 +152,34 @@ def luukku_muutos(status):
             suorita.wait()
             suorituksessa = False
             aiempiviesti = 1
+            """ Tarkistetaan tapahtuiko reed-tilassa muutos """
+            if (datetime.datetime.now() - reed_muutos_aika).total_seconds() > 31:
+                """ Ei muutosta reed-tilassa, sulkeutuiko luukku? """
+                loggeri.error("%s: Luukku ei reed-kytkimen mukaan sulkeutunut!", datetime.datetime.now())
+            luukku_auki = True
+
         except OSError as e:
             print("Virhe %s" % e)
             loggeri.error('%s: Luukkuohjaus OS-virhe %s' % (datetime.datetime.now(), e))
 
 
 def reedmuutos(channel):
-    global aiempiviesti  # verrataan mika tulisi olla luukun status
-    global suorituksessa  # ollaanko juuri suorittamassa edellista toimintoa
+    global reed_muutos_aika
     # 1 = reed on (eli magneetti irti), 0 = reed off (magneetti kiinni)
-    if (suorituksessa is False) and (GPIO.input(REEDPINNI)):
-        print("Reed-kytkin on")
-        if aiempiviesti != 0:
-            print("Luukku tulisi olla auki, mutta reed-kytkimen mukaan se on kiinni!")
-            loggeri.error('%s: Luukkuohjaus: luukku tulisi olla auki, mutta reed-kytkimen mukaan se ei ole!',
-                          datetime.datetime.now())
-            try:
-                mqttluukku.publish(REEDAIHE, payload=1, qos=1, retain=True)
-            except OSError as e:
-                print("Virhe %s" % e)
-                loggeri.error('%s: Luukkuohjaus OS-virhe %s' % (datetime.datetime.now(), e))
-                GPIO.cleanup()
-                return False
-            return 1
-        elif aiempiviesti != 1:
-            print("Luukku tulisi olla kiinni, mutta reed-kytkimen mukaan se on auki!")
-            loggeri.error('%s: Luukkuohjaus: luukku tulisi olla kiinni, mutta reed-kytkimen mukaan se ei ole!',
-                          datetime.datetime.now())
-            try:
-                mqttluukku.publish(REEDAIHE, payload=0, qos=1, retain=True)
-            except OSError as e:
-                print("Virhe %s" % e)
-                loggeri.error('%s: Luukkuohjaus OS-virhe %s' % (datetime.datetime.now(), e))
-                GPIO.cleanup()
-                return False
-            return 0
+    if GPIO.input(REEDPINNI) == 0:
+        reed_muutos_aika = datetime.datetime.now()
+        try:
+            mqttluukku.publish(REEDAIHE, payload=0, qos=1, retain=True)
+        except OSError as e:
+            print("Virhe %s" % e)
+            loggeri.error('%s: Reed OS-virhe %s' % (datetime.datetime.now(), e))
+    elif GPIO.input(REEDPINNI) == 1:
+        reed_muutos_aika = datetime.datetime.now()
+        try:
+            mqttluukku.publish(REEDAIHE, payload=1, qos=1, retain=True)
+        except OSError as e:
+            print("Virhe %s" % e)
+            loggeri.error('%s: Reed OS-virhe %s' % (datetime.datetime.now(), e))
 
 
 def alustus():
@@ -180,7 +187,7 @@ def alustus():
     mqttluukku.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
     mqttluukku.on_disconnect = mqtt_pura_yhteys  # puretaan yhteys disconnectissa
     mqttluukku.on_message = mqtt_viesti
-    mqttluukku.connect_async(MQTTSERVERI, MQTTSERVERIPORTTI, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
+    mqttluukku.connect(MQTTSERVERI, MQTTSERVERIPORTTI, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
     mqttluukku.loop_start()  # kuunnellaan jos tulee muutos luukun statukseen
 
     try:
@@ -194,7 +201,7 @@ def alustus():
 
 
 def looppi():
-    global aiempiviesti, suorituksessa, aurinko_laskenut
+    global aurinko_laskenut
     alustus()
 
     while True:
@@ -222,10 +229,8 @@ def looppi():
             ''' Luukun sulkemislogiikka'''
 
             ''' Jos aurinko on laskenut, suljetaan luukku jos luukku on auki ja viiveaika saavutettu'''
-            if (aurinko_laskenut is True) and (suorituksessa is False) and \
-                    (aiempiviesti == 1) and aika_nyt >= luukku_sulje_klo:
-                luukku_muutos(0)
-                print("Aurinko laskenut ja viive saavutettu. Suljetaan luukku.")
+            if (aurinko_laskenut is True) and (luukku_auki is True) and (aika_nyt >= luukku_sulje_klo):
+                mqttluukku.publish(LUUKKUAIHE, payload=0, qos=1, retain=True)
                 loggeri.info("%s: Aurinko laskenut ja viive saavutettu. Suljetaan luukku.", aika_nyt)
             time.sleep(1)  # CPU muuten 25 % jos ei ole hidastusta
 
