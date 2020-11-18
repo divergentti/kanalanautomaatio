@@ -324,7 +324,8 @@ def liiketunnistus(liikeobjekti, valoobjekti):
                                        - liikeobjekti.liike_loppunut_klo).total_seconds()
 
     ''' Liiketunnistuksen mukaan valojen sytytys ja sammutus ajan ylityttyä '''
-    if (aurinko_laskenut is True) and (valoobjekti.valot_paalla is False) and (liikeobjekti.liiketta_havaittu is True):
+    if (aurinko_laskenut is True) and (valoobjekti.valot_paalla is False) and (liikeobjekti.liiketta_havaittu is True) \
+            and (valoobjekti.pitoajalla is False):
         valoobjekti.valojen_ohjaus(1)
         valoobjekti.liikeyllapitoajalla = True
         valoobjekti.valot_ohjattu_paalle = datetime.datetime.now().astimezone(aikavyohyke)
@@ -394,12 +395,6 @@ def ohjausluuppi():
                 ulkovalot.pitoajalla = False
                 ulkovalot.valot_ohjattu_pois = datetime.datetime.now().astimezone(aikavyohyke)
                 loggeri.info("%s: Valot ohjattu pois", ulkovalot.valot_ohjattu_pois)
-            elif (aurinko_laskenut is True) and (luukku_auki is False) and \
-                    (datetime.datetime.now().astimezone(aikavyohyke) - luukku_suljettu_aika) >= \
-                    datetime.timedelta(minutes=60) and (ulkovalot.valot_paalla is False):
-                """" Tarkkaillaan liikettä """
-                for z in range(len(ohjausobjektit)):
-                    liiketunnistus(ohjausobjektit[z][0], ohjausobjektit[z][1])
             elif (aurinko_laskenut is False) and (ulkovalot.valot_paalla is True):
                 """ Sammutetaan valot, aurinko noussut """
                 ulkovalot.valojen_ohjaus(0)
@@ -407,6 +402,10 @@ def ohjausluuppi():
                 ulkovalot.liikeyllapitoajalla = False
                 ulkovalot.valot_ohjattu_pois = datetime.datetime.now().astimezone(aikavyohyke)
                 loggeri.info("%s: Aurinko noussut. Valot ohjattu pois", ulkovalot.valot_ohjattu_pois)
+            else:
+                """" Tarkkaillaan liikettä """
+                for z in range(len(ohjausobjektit)):
+                    liiketunnistus(ohjausobjektit[z][0], ohjausobjektit[z][1])
 
         except KeyboardInterrupt:
             raise
