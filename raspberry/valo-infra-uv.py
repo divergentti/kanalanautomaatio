@@ -106,8 +106,6 @@ def paaluuppi():
             infrapuna = valosensori.readIR()
             uv = valosensori.readUV()
             uvindeksi = uv / 100.0
-            if mqttanturi.is_connected() is False:
-                mqttanturi.reconnect()
             # estetaan vaarat arvot
             if valoisuus is not None:
                 # print('Valoisuus: %s' % valoisuus)
