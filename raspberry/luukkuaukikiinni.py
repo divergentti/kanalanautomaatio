@@ -23,7 +23,7 @@ from parametrit import LUUKKUAIHE, MQTTSERVERI, MQTTKAYTTAJA, MQTTSALARI, MQTTSE
 
 
 """ Objektien luonti """
-mqttluukku = mqtt.Client("luukku-aukikiinni")  # mqtt objektin luominen
+mqttobjekti = mqtt.Client("luukku-aukikiinni")  # mqtt objektin luominen
 aurinko = Sun(LATITUDI, LONGITUDI)
 
 
@@ -67,18 +67,11 @@ def mqttyhdista(client, userdata, flags, rc):
     # Yhdistetaan brokeriin ja tilataan aihe
 
 
-def alustus():
-    loggeri.info('PID %s. Sovellus käynnistetty %s' % (os.getpid(), datetime.datetime.now().astimezone(aikavyohyke)))
-    try:
-        mqttluukku.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
-        mqttluukku.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
-        mqttluukku.connect(MQTTSERVERI, MQTTSERVERIPORTTI, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
-    except OSError as e:
-        loggeri.error('%s: Luukkuohjaus OS-virhe %s' % (datetime.datetime.now(), e))
-
-
 def looppi():
-    alustus()
+    loggeri.info('PID %s. Sovellus käynnistetty %s' % (os.getpid(), datetime.datetime.now().astimezone(aikavyohyke)))
+    mqttobjekti.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
+    mqttobjekti.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
+    mqttobjekti.connect(MQTTSERVERI, MQTTSERVERIPORTTI, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
     ma_pe_tunnit, ma_pe_minutit = map(int, LUUKKU_AVAUSAIKA_MA_PE.split(':'))
     la_su_tunnit, la_su_minutit = map(int, LUUKKU_AVAUSAIKA_LA_SU.split(':'))
     aloitusauki = datetime.datetime.now().astimezone(aikavyohyke).replace(hour=ma_pe_tunnit, minute=ma_pe_minutit)
@@ -123,12 +116,14 @@ def looppi():
 
             if (viikolla is True) and (aika_nyt >= ma_pe_auki) and (aika_nyt.hour < 12) and \
                     (aurinko_laskenut is False) and (auki_lahetetty is False):
-                mqttluukku.publish(LUUKKUAIHE, payload=1, qos=1, retain=True)
+                mqttobjekti.publish(LUUKKUAIHE, payload=1, qos=1, retain=True)
+                mqttobjekti.loop()
                 auki_lahetetty = True
                 loggeri.info("%s: Avataan luukku MA-PE ajan mukaisesti.", aika_nyt)
             elif (viikolla is False) and (aika_nyt >= la_su_auki) and (aika_nyt.hour < 12) and \
                     (aurinko_laskenut is False) and (auki_lahetetty is False):
-                mqttluukku.publish(LUUKKUAIHE, payload=1, qos=1, retain=True)
+                mqttobjekti.publish(LUUKKUAIHE, payload=1, qos=1, retain=True)
+                mqttobjekti.loop()
                 auki_lahetetty = True
                 loggeri.info("%s: Avataan luukku LA-SU ajan mukaisesti.", aika_nyt)
 
@@ -136,7 +131,8 @@ def looppi():
 
             ''' Jos aurinko on laskenut, suljetaan luukku jos luukku on auki ja viiveaika saavutettu'''
             if (aurinko_laskenut is True) and (aika_nyt >= luukku_sulje_klo) and (auki_lahetetty is True):
-                mqttluukku.publish(LUUKKUAIHE, payload=0, qos=1, retain=True)
+                mqttobjekti.publish(LUUKKUAIHE, payload=0, qos=1, retain=True)
+                mqttobjekti.loop()
                 auki_lahetetty = False
                 loggeri.info("%s: Aurinko laskenut ja viive saavutettu. Suljetaan luukku.", aika_nyt)
 
