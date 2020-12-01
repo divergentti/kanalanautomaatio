@@ -6,6 +6,7 @@
  Laskee auringonlaskun ja lähettää ULKOLUUKKU_KIINNI_VIIVE jälkeen komennon sulkea luukku.
 
  30.11.2020 Jari Hiltunen
+ 1.12.2020 Lisätty luukun statuksen päivitys mqtt-kautta. Huom! Yhteysongelmissa lisää brokerin päähän debug!
 
 """
 
@@ -23,12 +24,15 @@ from parametrit import LUUKKUAIHE, MQTTSERVERI, MQTTKAYTTAJA, MQTTSALARI, MQTTSE
 
 
 """ Objektien luonti """
-mqttobjekti = mqtt.Client("luukku-aukikiinni")  # mqtt objektin luominen
+mqttobjekti = mqtt.Client('luukku-aukikiinni')  # mqtt objektin luominen
 aurinko = Sun(LATITUDI, LONGITUDI)
 
 
 ''' Päivämäärämuuttujat'''
 aikavyohyke = tz.tzlocal()
+
+''' Globaalit '''
+luukku_auki = None
 
 
 def virhe_loggeri(login_formaatti='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -65,21 +69,37 @@ def mqttyhdista(client, userdata, flags, rc):
     print("Yhdistetty statuksella " + str(rc))
     loggeri.info("%s: Yhdistetty statuksella %s" % (datetime.datetime.now(), str(rc)))
     # Yhdistetaan brokeriin ja tilataan aihe
+    client.subscribe('kanala/ulko/luukku')
 
 
-def looppi():
+def mqtt_pura_yhteys(client, userdata, rc=0):
+    loggeri.info("%s: Purettu yhteys statuksella %s" % (datetime.datetime.now(), str(rc)))
+    client.loop_stop()
+
+
+def mqtt_viesti(client, userdata, message):
+    global luukku_auki
+    print(message.payload)
+    if int(message.payload) == 1:
+        luukku_auki = True
+    elif int(message.payload) == 0:
+        luukku_auki = False
+
+
+def alustus():
     loggeri.info('PID %s. Sovellus käynnistetty %s' % (os.getpid(), datetime.datetime.now().astimezone(aikavyohyke)))
     mqttobjekti.on_connect = mqttyhdista  # mita tehdaan kun yhdistetaan brokeriin
     mqttobjekti.username_pw_set(MQTTKAYTTAJA, MQTTSALARI)  # mqtt useri ja salari
+    mqttobjekti.on_message = mqtt_viesti
     mqttobjekti.connect(MQTTSERVERI, MQTTSERVERIPORTTI, keepalive=60, bind_address="")  # yhdista mqtt-brokeriin
+    mqttobjekti.loop_start()
+
+
+def looppi():
+    alustus()
     ma_pe_tunnit, ma_pe_minutit = map(int, LUUKKU_AVAUSAIKA_MA_PE.split(':'))
     la_su_tunnit, la_su_minutit = map(int, LUUKKU_AVAUSAIKA_LA_SU.split(':'))
-    aloitusauki = datetime.datetime.now().astimezone(aikavyohyke).replace(hour=ma_pe_tunnit, minute=ma_pe_minutit)
-
-    if datetime.datetime.now().astimezone(aikavyohyke) > aloitusauki:
-        auki_lahetetty = True
-    else:
-        auki_lahetetty = False
+    sulkuviive = 32  # sekuntia
 
     while True:
         try:
@@ -114,29 +134,24 @@ def looppi():
             ma_pe_auki = aika_nyt.replace(hour=ma_pe_tunnit, minute=ma_pe_minutit)
             la_su_auki = aika_nyt.replace(hour=la_su_tunnit, minute=la_su_minutit)
 
-            if (viikolla is True) and (aika_nyt >= ma_pe_auki) and (aika_nyt.hour < 12) and \
-                    (aurinko_laskenut is False) and (auki_lahetetty is False):
+            if (viikolla is True) and (aika_nyt >= ma_pe_auki) and (aika_nyt.hour < 12) and (luukku_auki is False):
                 mqttobjekti.publish(LUUKKUAIHE, payload=1, qos=1, retain=True)
-                mqttobjekti.loop()
-                auki_lahetetty = True
+                time.sleep(sulkuviive)
                 loggeri.info("%s: Avataan luukku MA-PE ajan mukaisesti.", aika_nyt)
-            elif (viikolla is False) and (aika_nyt >= la_su_auki) and (aika_nyt.hour < 12) and \
-                    (aurinko_laskenut is False) and (auki_lahetetty is False):
+            if (viikolla is False) and (aika_nyt >= la_su_auki) and (aika_nyt.hour < 12) and (luukku_auki is False):
                 mqttobjekti.publish(LUUKKUAIHE, payload=1, qos=1, retain=True)
-                mqttobjekti.loop()
-                auki_lahetetty = True
+                time.sleep(sulkuviive)
                 loggeri.info("%s: Avataan luukku LA-SU ajan mukaisesti.", aika_nyt)
 
             ''' Luukun sulkemislogiikka '''
 
             ''' Jos aurinko on laskenut, suljetaan luukku jos luukku on auki ja viiveaika saavutettu'''
-            if (aurinko_laskenut is True) and (aika_nyt >= luukku_sulje_klo) and (auki_lahetetty is True):
+            if (aurinko_laskenut is True) and (aika_nyt >= luukku_sulje_klo) and (luukku_auki is True):
                 mqttobjekti.publish(LUUKKUAIHE, payload=0, qos=1, retain=True)
-                mqttobjekti.loop()
-                auki_lahetetty = False
+                time.sleep(sulkuviive)
                 loggeri.info("%s: Aurinko laskenut ja viive saavutettu. Suljetaan luukku.", aika_nyt)
 
-            time.sleep(1)  # CPU muuten 25 % jos ei ole hidastusta
+            time.sleep(1)  # CPU muuten 25 % jos ei ole hidastusta ja mqtt brokeri kerkiää käsitellä tilanteen
 
         except KeyboardInterrupt:
             raise
