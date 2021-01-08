@@ -74,7 +74,7 @@ def restart_and_reconnect():
 
 
 class StepperMotor:
-    """ ULN2003-based control, half steps. Asynchronous setup. """
+    """ ULN2003-based control, half_steps, asynchronous setup. """
 
     def __init__(self, in1, in2, in3, in4, indelay):
         self.motor = Steppermotor.create(Pin(in1, Pin.OUT), Pin(in2, Pin.OUT), Pin(in3, Pin.OUT),
@@ -88,47 +88,47 @@ class StepperMotor:
         self.curtain_up_time = None
         self.curtain_down_time = None
 
-    async def find_top_position(self):
+    async def step_up(self):
+        if limiter_switch.value() == 0:
+            self.motor.step(1, -1)
+            await asyncio.sleep_ms(1)
+
+    async def step_down(self):
+        self.motor.step(1)
+        await asyncio.sleep_ms(1)
+
+    async def wind_to_toplimiter(self):
         print("Starting uprotation...")
         n = 0
         starttime = utime.ticks_ms()
-        while (self.curtain_up is False) and ((utime.ticks_ms() - starttime) < 30000):
+        while (self.curtain_up is False) and ((utime.ticks_ms() - starttime) < 60000):
             if limiter_switch.value() == 0:
-                self.motor.step(1, -1)
+                await self.step_up()
                 n += 1
             else:
                 self.up_down_delay_ms = utime.ticks_ms() - starttime
                 self.curtain_steps = n
                 self.curtain_up = True
                 await self.zero_to_position()
-                print("Found top steps %s" % self.curtain_steps)
+                print("Found top, steps taken %s" % self.curtain_steps)
 
-    async def turn_x_degrees_right(self, degrees):
-        self.motor.angle(degrees)
+    async def roll_curtain_down(self):
+        print("Starting downrotation ...")
+        for x in range(self.curtain_steps):
+            await self.step_down()
+        self.curtain_up = False
+        self.curtain_down_time = utime.localtime()
 
-    async def turn_x_degrees_left(self, degrees):
-        self.motor.angle(degrees, -1)
+    async def wind_x_rotations(self, y):
+        for x in range(y):
+            await self.step_up()
 
-    async def turn_x_steps_right(self, steps):
-        self.motor.step(steps)
-
-    async def turn_x_steps_left(self, steps):
-        self.motor.step(steps, -1)
+    async def release_x_rotations(self, y):
+        for x in range(y):
+            await self.step_down()
 
     async def zero_to_position(self):
         self.motor.reset()
-
-    async def roll_curtain_up(self):
-        self.motor.step(self.curtain_steps)
-        self.curtain_up = True
-        await asyncio.sleep(self.up_down_delay_ms)
-        self.curtain_up_time = utime.localtime()
-
-    async def roll_curtain_down(self):
-        self.motor.step(self.curtain_steps, -1)
-        self.curtain_up = False
-        await asyncio.sleep(self.up_down_delay_ms)
-        self.curtain_down_time = utime.localtime()
 
 
 class DistanceSensor:
@@ -221,19 +221,25 @@ async def main():
     #  Initialize reading loops
     asyncio.create_task(inside_distance.measure_distance_cm_loop())
     asyncio.create_task(outside_distance.measure_distance_cm_loop())
-    #  Rotate pulley until limiter switch is 1 - wait time 30 seconds
+    #  Rotate pulley until limiter switch is 1 - wait time 60 seconds
     # if pulley_motor.curtain_steps = 0, then operation failed to find top position
-    await pulley_motor.find_top_position()
-    print(pulley_motor.curtain_steps)
+    await pulley_motor.wind_to_toplimiter()
+    # more wire
+    # await pulley_motor.release_x_rotations(1000)
+    # less wire
+    # await pulley_motor.wind_x_rotations(1000)
 
     while True:
-
-        """ if inside_distance.distancecm is not None:
-            if (inside_distance.distancecm < 30) and (reel_motor.curtain_up is False):
-                await reel_motor.roll_curtain_up()
-            elif (inside_distance.distancecm > 30) and (reel_motor.curtain_up is True):
-                await reel_motor.roll_curtain_down()"""
-
-        await asyncio.sleep(5)
+        if inside_distance.distancecm is not None:
+            if (inside_distance.distancecm < 30) and (pulley_motor.curtain_up is False):
+                await pulley_motor.wind_to_toplimiter()
+            elif (inside_distance.distancecm > 30) and (pulley_motor.curtain_up is True):
+                await pulley_motor.roll_curtain_down()
+        """ if outside_distance.distancecm is not None:
+            if (outside_distance.distancecm < 50) and (pulley_motor.curtain_up is False):
+                await pulley_motor.wind_to_toplimiter()
+            elif (outside_distance.distancecm > 50) and (pulley_motor.curtain_up is True):
+                await pulley_motor.roll_curtain_down() """
+        await asyncio.sleep(1)
 
 asyncio.run(main())
