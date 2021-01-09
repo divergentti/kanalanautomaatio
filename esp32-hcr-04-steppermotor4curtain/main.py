@@ -23,6 +23,9 @@ Libraries:
 
 14.12.2020 Jari Hiltunen
 8.1.2021 Added limiter switch and fixed distance measuring so that WebREPL works
+9.1.2021 Added mqtt connection which updates outdoor latch status and sends error reports
+         Added parameters.py mqtt topic for outdoor latch, distances for inner and outer sensors
+         Added to Steppermotor class status info is curtain motor stopped (0), opening (1) or closing (2)
 """
 
 
@@ -41,13 +44,14 @@ try:
     from parameters import SSID1, SSID2, PASSWORD1, PASSWORD2, MQTT_SERVER, MQTT_PASSWORD, MQTT_USER, MQTT_PORT, \
         CLIENT_ID, BATTERY_ADC_PIN, TOPIC_ERRORS, STEPPER1_PIN1, STEPPER1_PIN2, STEPPER1_PIN3, STEPPER1_PIN4, \
         STEPPER1_DELAY, HCSR04_1_ECHO_PIN, HCSR04_1_TRIGGER_PIN, HCSR04_2_TRIGGER_PIN, HCSR04_2_ECHO_PIN, \
-        LIMITER_SWITCH_PIN
+        LIMITER_SWITCH_PIN, TOPIC_OUTDOOR, INSIDE_DISTANCE_CM, OUTSIDE_DISTANCE_CM, KEEP_CURTAIN_UP_DELAY
 except OSError:  # open failed
     print("parameter.py-file missing! Can not continue!")
     raise
 
 #  Globals
 previous_mqtt = utime.time()
+outdoor_open = False
 use_wifi_password = None
 
 
@@ -57,19 +61,11 @@ if network.WLAN(network.STA_IF).config('essid') == SSID1:
 elif network.WLAN(network.STA_IF).config('essid') == SSID2:
     use_wifi_password = PASSWORD2
 
-config['server'] = MQTT_SERVER
-config['ssid'] = network.WLAN(network.STA_IF).config('essid')
-config['wifi_pw'] = use_wifi_password
-config['user'] = MQTT_USER
-config['password'] = MQTT_PASSWORD
-config['port'] = MQTT_PORT
-config['client_id'] = CLIENT_ID
-client = MQTTClient(config)
-
 
 def restart_and_reconnect():
     #  Last resort
-    utime.sleep(5)
+    print("About to reboot in 20s... ctrl + c to break")
+    utime.sleep(20)
     reset()
 
 
@@ -84,48 +80,66 @@ class StepperMotor:
         self.toplimit = 500
         self.curtain_steps = 0
         self.up_down_delay_ms = 500
+        self.curtain_rolling = 0  # 0 = not rolling, 1 = rolling up, 2 = rolling down
         self.curtain_up = False
         self.curtain_up_time = None
         self.curtain_down_time = None
 
     async def step_up(self):
         if limiter_switch.value() == 0:
-            self.motor.step(1, -1)
+            try:
+                self.motor.step(1, -1)
+            except OSError as ex:
+                print('ERROR stepping up:', ex)
+                await error_reporting('ERROR stepping up: %s' % ex)
             await asyncio.sleep_ms(1)
 
     async def step_down(self):
-        self.motor.step(1)
+        try:
+            self.motor.step(1)
+        except OSError as ex:
+            print('ERROR stepping down:', ex)
+            await error_reporting('ERROR stepping down: %s' % ex)
         await asyncio.sleep_ms(1)
 
     async def wind_to_toplimiter(self):
         print("Starting uprotation...")
         n = 0
         starttime = utime.ticks_ms()
+        self.curtain_rolling = 1
         while (self.curtain_up is False) and ((utime.ticks_ms() - starttime) < 60000):
             if limiter_switch.value() == 0:
                 await self.step_up()
                 n += 1
             else:
+                self.curtain_up = True
+                self.curtain_up_time = utime.localtime()
                 self.up_down_delay_ms = utime.ticks_ms() - starttime
                 self.curtain_steps = n
-                self.curtain_up = True
+                self.curtain_rolling = 0
                 await self.zero_to_position()
                 print("Found top, steps taken %s" % self.curtain_steps)
 
     async def roll_curtain_down(self):
         print("Starting downrotation ...")
+        self.curtain_rolling = 2
         for x in range(self.curtain_steps):
             await self.step_down()
         self.curtain_up = False
+        self.curtain_rolling = 0
         self.curtain_down_time = utime.localtime()
 
     async def wind_x_rotations(self, y):
+        self.curtain_rolling = 1
         for x in range(y):
             await self.step_up()
+        self.curtain_rolling = 0
 
     async def release_x_rotations(self, y):
+        self.curtain_rolling = 2
         for x in range(y):
             await self.step_down()
+        self.curtain_rolling = 0
 
     async def zero_to_position(self):
         self.motor.reset()
@@ -148,6 +162,7 @@ class DistanceSensor:
                 self.distancecm = None
         except OSError as ex:
             print('ERROR getting distance:', ex)
+            await error_reporting(ex)
 
     async def measure_distance_cm_loop(self):
         while True:
@@ -164,6 +179,7 @@ class DistanceSensor:
                 self.distancemm = None
         except OSError as ex:
             print('ERROR getting distance:', ex)
+            await error_reporting(ex)
 
     async def measure_distance_mm_loop(self):
         while True:
@@ -186,18 +202,31 @@ async def error_reporting(error):
     await client.publish(TOPIC_ERRORS, str(errormessage), retain=False)
 
 
-async def mqtt_report():
-    global previous_mqtt
+async def mqtt_up_loop():
+    #  This loop just keeps the mqtt connection up
+    await mqtt_subscribe(client)
     n = 0
     while True:
         await asyncio.sleep(5)
-        # print('mqtt-publish', n)
+        print('mqtt-publish', n)
         await client.publish('result', '{}'.format(n), qos=1)
         n += 1
-        """ if (kaasusensori.eCO2_keskiarvo > 0) and (kaasusensori.tVOC_keskiarvo > 0) and \
-                (utime.time() - previous_mqtt) > 60:
-            try:
-                await client.publish(AIHE_CO2, str(kaasusensori.eCO2_keskiarvo), retain=False, qos=0) """
+
+
+async def mqtt_subscribe(client):
+    await client.subscribe(TOPIC_OUTDOOR, 0)
+
+
+def update_outdoor_status(topic, msg, retained):
+    global outdoor_open
+    # print("Topic: %s, message %s" % (topic, msg))
+    status = int(msg)
+    if status == 1:
+        print("Outdoor status: opened")
+        outdoor_open = True
+    elif status == 0:
+        print("Outdoor status: close")
+        outdoor_open = False
 
 
 pulley_motor = StepperMotor(STEPPER1_PIN1, STEPPER1_PIN2, STEPPER1_PIN3, STEPPER1_PIN4, STEPPER1_DELAY)
@@ -211,35 +240,77 @@ async def show_what_i_do():
         print("Inside distance: %s" % inside_distance.distancecm)
         print("Outside distance: %s" % outside_distance.distancecm)
         print("Limiter switch status: %s" % limiter_switch.value())
+        print("Pulley motor status: %s" % pulley_motor.curtain_rolling)
+        print("Outdoor open: %s" % outdoor_open)
         await asyncio.sleep(1)
+
+# Asynchronous mqtt for updating outdoor mqtt status and sending errors to database
+config['server'] = MQTT_SERVER
+config['ssid'] = network.WLAN(network.STA_IF).config('essid')
+config['wifi_pw'] = use_wifi_password
+config['user'] = MQTT_USER
+config['password'] = MQTT_PASSWORD
+config['port'] = MQTT_PORT
+config['client_id'] = CLIENT_ID
+config['subs_cb'] = update_outdoor_status
+config['connect_coro'] = mqtt_subscribe
+client = MQTTClient(config)
 
 
 async def main():
-    MQTTClient.DEBUG = False
-    # await client.connect()
+    MQTTClient.DEBUG = True
+    try:
+        await client.connect()
+    except OSError as ex:
+        print("Error %s. Perhaps mqtt username or password is wrong or missing or broker down?" % ex)
+        raise
+    asyncio.create_task(mqtt_up_loop())
     asyncio.create_task(show_what_i_do())
-    #  Initialize reading loops
+    #  Initialize distance reading loops
     asyncio.create_task(inside_distance.measure_distance_cm_loop())
     asyncio.create_task(outside_distance.measure_distance_cm_loop())
-    #  Rotate pulley until limiter switch is 1 - wait time 60 seconds
-    # if pulley_motor.curtain_steps = 0, then operation failed to find top position
+    # Curtain shall be down when operation is started, but if limiter switch is 1, then we
+    # have to first release some wire to lower the curtain.
+    if limiter_switch.value() == 1:
+        await pulley_motor.release_x_rotations(2000)   # about 12 cm with 1:4 gear ratio
+    #  Rotate pulley until limiter switch is 1 - wait time max 60 seconds
     await pulley_motor.wind_to_toplimiter()
+    # if pulley_motor.curtain_steps = 0, then operation failed to find top position
+    if pulley_motor.curtain_steps == 0:
+        print("Check limiter switch!")
+        await error_reporting("Check limiter switch!")
+        utime.sleep(30)
+        raise
     # more wire
     # await pulley_motor.release_x_rotations(1000)
     # less wire
     # await pulley_motor.wind_x_rotations(1000)
 
     while True:
-        if inside_distance.distancecm is not None:
-            if (inside_distance.distancecm < 30) and (pulley_motor.curtain_up is False):
-                await pulley_motor.wind_to_toplimiter()
-            elif (inside_distance.distancecm > 30) and (pulley_motor.curtain_up is True):
-                await pulley_motor.roll_curtain_down()
-        """ if outside_distance.distancecm is not None:
-            if (outside_distance.distancecm < 50) and (pulley_motor.curtain_up is False):
-                await pulley_motor.wind_to_toplimiter()
-            elif (outside_distance.distancecm > 50) and (pulley_motor.curtain_up is True):
-                await pulley_motor.roll_curtain_down() """
+        if outdoor_open is True:
+            if inside_distance.distancecm is not None:
+                if (inside_distance.distancecm <= INSIDE_DISTANCE_CM) and (pulley_motor.curtain_up is False) and \
+                        (pulley_motor.curtain_rolling == 0):
+                    await pulley_motor.wind_to_toplimiter()
+                elif (inside_distance.distancecm > INSIDE_DISTANCE_CM) and (pulley_motor.curtain_up is True) and \
+                        (pulley_motor.curtain_rolling == 0) and \
+                        ((utime.mktime(utime.localtime()) - utime.mktime(pulley_motor.curtain_up_time)) >
+                         KEEP_CURTAIN_UP_DELAY):
+                    await pulley_motor.roll_curtain_down()
+            if outside_distance.distancecm is not None:
+                if (outside_distance.distancecm <= OUTSIDE_DISTANCE_CM) and (pulley_motor.curtain_up is False) and \
+                        (pulley_motor.curtain_rolling == 0):
+                    await pulley_motor.wind_to_toplimiter()
+                elif (outside_distance.distancecm > OUTSIDE_DISTANCE_CM) and (pulley_motor.curtain_up is True) and \
+                     (pulley_motor.curtain_rolling == 0) and \
+                        ((utime.mktime(utime.localtime()) - utime.mktime(pulley_motor.curtain_up_time)) >
+                         KEEP_CURTAIN_UP_DELAY):
+                    await pulley_motor.roll_curtain_down()
+        elif (outdoor_open is False) and (pulley_motor.curtain_up is True):
+            await pulley_motor.roll_curtain_down()
         await asyncio.sleep(1)
 
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except:
+    restart_and_reconnect()
