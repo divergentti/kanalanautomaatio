@@ -1,25 +1,29 @@
 """" This script controls inside curtain in the chicken house (or anything what 5V stepper motor can handle).
 
-Operation basics: measures distance from two HCSR-04 sensors and if distance is > 30 cm, opens the curtain, else
-closes the curtain. Limiter switch is for the upmost position detection.
+Operation basics: if outdoor is open (status updated via mqtt), measures distance from two HCSR-04 sensors and
+if distance is > INSIDE_DISTANCE_CM or OUTSIDE_DISTANCE_CM, opens the curtain and keeps it up KEEP_CURTAIN_UP_DELAY
+else closes the curtain. Limiter switch is for the upmost position detection.
 
-Operation starts by rolling wire to the pulley from the lowest position. That value will be used for up - down steps
-counter.
+Operation starts by rolling wire to the pulley from the lowest position. That value can be used for up - down steps
+counter, but this version winds always up to the limiter switch.
 
 Installation with ESP32 Dev Board: connect pins as in the parameters.py and for the echo-pin use either
   voltage splitter or level converter from 5V to 3.3V.
 
-Stepper motor: 28BYJ-48, control board ULN2003.
+Stepper motor: 28BYJ-48, control board ULN2003. Lifts about 1 kg with 12V/1A PSU converted with LM2894 to 5V.
 
 Sensors: HCSR-04 datasheet: https://datasheetspdf.com/pdf/1380136/ETC/HC-SR04/1
  Power Supply: +5V DC, Quiescent Current: <2mA, Working current: 15mA, Effectual Angle: <15º,
  Ranging Distance: 2-400 cm, Resolution: 0.3 cm, Measuring Angle: 30º, Trigger Input Pulse width: 10uS
 
-
 Libraries:
  HCSR-04: https://github.com/rsc1975/micropython-hcsr04/blob/master/hcsr04.py
  MQTT_AS (not yet defined) https://github.com/peterhinch/micropython-mqtt/blob/master/mqtt_as/mqtt_as.py
  Stepper.py https://github.com/IDWizard/uln2003/blob/master/uln2003.py
+
+3D cases for 28BYJ-48 and HSCSR-04 at https://www.thingiverse.com/thing:4714795 and
+https://www.thingiverse.com/thing:4694604 and Fusion360 drawings for all of these at
+https://gallery.autodesk.com/projects/esp32-related-stuff
 
 14.12.2020 Jari Hiltunen
 8.1.2021 Added limiter switch and fixed distance measuring so that WebREPL works
@@ -187,7 +191,7 @@ class DistanceSensor:
             await asyncio.sleep_ms(100)
 
 
-async def resolve_date():
+def resolve_date():
     (year, month, mdate, hour, minute, second, wday, yday) = utime.localtime()
     date = "%s.%s.%s time %s:%s:%s" % (mdate, month, year, "{:02d}".format(hour), "{:02d}".format(minute), "{:02d}".
                                        format(second))
@@ -237,11 +241,10 @@ limiter_switch = Pin(LIMITER_SWITCH_PIN, Pin.IN, Pin.PULL_UP)
 
 async def show_what_i_do():
     while True:
-        print("Inside distance: %s" % inside_distance.distancecm)
-        print("Outside distance: %s" % outside_distance.distancecm)
-        print("Limiter switch status: %s" % limiter_switch.value())
-        print("Pulley motor status: %s" % pulley_motor.curtain_rolling)
-        print("Outdoor open: %s" % outdoor_open)
+        print("Distances: inside: %s, outside: %s" % (inside_distance.distancecm, outside_distance.distancecm))
+        print("Switch status: %s, pulley motor status: %s" % (limiter_switch.value(), pulley_motor.curtain_rolling))
+        print("Outdoor open: %s, curtain steps: %s" % (outdoor_open, pulley_motor.curtain_steps))
+        print("-------")
         await asyncio.sleep(1)
 
 # Asynchronous mqtt for updating outdoor mqtt status and sending errors to database
@@ -258,7 +261,7 @@ client = MQTTClient(config)
 
 
 async def main():
-    MQTTClient.DEBUG = True
+    MQTTClient.DEBUG = False
     try:
         await client.connect()
     except OSError as ex:
@@ -272,7 +275,7 @@ async def main():
     # Curtain shall be down when operation is started, but if limiter switch is 1, then we
     # have to first release some wire to lower the curtain.
     if limiter_switch.value() == 1:
-        await pulley_motor.release_x_rotations(2000)   # about 12 cm with 1:4 gear ratio
+        await pulley_motor.release_x_rotations(5833)   # about 35 cm with 1:4 gear ratio
     #  Rotate pulley until limiter switch is 1 - wait time max 60 seconds
     await pulley_motor.wind_to_toplimiter()
     # if pulley_motor.curtain_steps = 0, then operation failed to find top position
