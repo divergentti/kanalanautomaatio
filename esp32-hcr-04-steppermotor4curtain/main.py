@@ -243,7 +243,8 @@ async def show_what_i_do():
     while True:
         print("Distances: inside: %s, outside: %s" % (inside_distance.distancecm, outside_distance.distancecm))
         print("Switch status: %s, pulley motor status: %s" % (limiter_switch.value(), pulley_motor.curtain_rolling))
-        print("Outdoor open: %s, curtain steps: %s" % (outdoor_open, pulley_motor.curtain_steps))
+        print("Outdoor open: %s, curtain steps: %s, curtain is up: %s " % (outdoor_open, pulley_motor.curtain_steps,
+                                                                           pulley_motor.curtain_up))
         print("-------")
         await asyncio.sleep(1)
 
